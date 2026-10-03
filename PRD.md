@@ -6,11 +6,11 @@
 
 | Metadata | Detail |
 | :--- | :--- |
-| **Document Version** | `v1.0.0-DRAFT` |
+| **Document Version** | `v1.1.0-APPROVED` (Post-Review Consensus) |
 | **Date** | 2026-10-03 |
-| **Author** | Afgan & Antigravity (Google DeepMind) |
-| **Target Reviewers** | Claude Desktop (Anthropic), ChatGPT Desktop (OpenAI), Antigravity |
-| **Primary OS Target** | Linux (CachyOS / Arch / GNOME Wayland & X11) & Cross-Platform (macOS, Windows) |
+| **Authors & Reviewers** | Afgan, Antigravity, Claude Desktop (Opus 5.5), ChatGPT Desktop |
+| **Architectural Consensus** | Hub-and-Spoke Blackboard (SQLite), Rust + Tauri v2 (`portable-pty`), Dual MCP & Deep Link |
+| **Primary OS Target** | Linux (CachyOS GNOME Wayland & X11) & Cross-Platform |
 | **Target Resource Footprint** | Idle RAM < 60 MB, Launch Time < 400ms |
 
 ---
@@ -162,16 +162,14 @@ RigDeck mengekspos dirinya sendiri sebagai **Model Context Protocol (MCP) Server
 
 ---
 
-## 6. Bahan Diskusi & Pertanyaan RFC (Request For Comments)
-*(Untuk direview bersama oleh **Claude Desktop** dan **ChatGPT Desktop**)*
+## 6. Keputusan Arsitektur Final (Architecture Decision Records / ADR)
+*(Hasil Konsensus Cross-AI: Antigravity + Claude Desktop Opus 5.5 + ChatGPT Desktop)*
 
-Untuk mematangkan PRD ini, berikut pertanyaan kunci arsitektur yang perlu didiskusikan bersama:
+| No | Topik | Keputusan Final | Rationale / Alasan Teknis |
+| :--- | :--- | :--- | :--- |
+| **ADR-01** | **Komunikasi Antar-Agen** | **Hub-and-Spoke (Blackboard Pattern via SQLite WAL)** | Mencegah infinite banter loop antar LLM, menjamin full auditability tiket tugas, dan mempermudah debugging state machine (`task_dag` & `agent_events`). |
+| **ADR-02** | **Strategi Git Conflict** | **Two-Tier Strategy (Auto-Rebase Reviewer → 3-Way Visual Diff HITL)** | Tier 1 auto-merge clean branches. Tier 2 memanggil Reviewer Agent dengan conflict markers. Tier 3 fallback ke modal diff editor interaktif (Monaco) agar user bisa accept left/right dalam hitungan detik. |
+| **ADR-03** | **Integrasi Eksternal** | **Dual Approach: MCP Server + Deep Link (`rigdeck://`)** | MCP Server untuk trigger tugas semantik langsung dari Claude/ChatGPT Desktop tanpa switch window. Protocol `rigdeck://` untuk navigasi visual instan dari chat link ke terminal RigDeck. |
+| **ADR-04** | **Daemon Engine & Runtime** | **Rust Monolitik (Tauri v2 + `portable-pty`)** | Crate `portable-pty` native jauh lebih stabil di CachyOS (bebas masalah kompilasi `node-gyp`). Idle RAM terjaga ~35MB, dan mendukung System Tray / Background Process saat GUI ditutup. |
+| **ADR-05** | **UI/UX Resiliensi** | **Multiplexed Grid dengan WebGL/DOM Fallback & HITL HUD** | Mode layout 1-Focus, 2-Split, dan 4-Matrix. WebGL dengan auto-fallback ke DOM di Linux WebKitGTK. Floating action card merah/amber untuk konfirmasi command berbahaya (`rm`, `git reset`, `push -f`). |
 
-1. **Komunikasi Antar-Agen (Agent-to-Agent Protocol):**
-   * *Untuk Claude & ChatGPT:* Apakah sebaiknya agen berkomunikasi secara **sentralistik (Hub-and-Spoke via SQLite Task Board)** atau secara **langsung (Peer-to-Peer Agent Message Bus via WebSocket)**? Mana yang lebih minim halusinasi dan lebih mudah didebug?
-2. **Penanganan Git Conflict:**
-   * Bagaimana strategi terbaik jika dua agen menghasilkan konflik git di file yang sama pada saat fase merge? Apakah kita delegasikan ke agen Reviewer khusus untuk auto-resolve, atau wajib berhenti dan meminta bantuan manusia?
-3. **Integrasi MCP vs Deep Linking:**
-   * Apakah integrasi dua arah (RigDeck sebagai MCP server untuk Claude/ChatGPT) sudah cukup, atau apakah kita juga perlu menambahkan URL Scheme (misal `rigdeck://project/task/123`) agar IDE seperti VS Code dan Antigravity bisa langsung memicu task?
-4. **Daemon Engine (Rust vs Bun):**
-   * Di lingkungan Linux CachyOS, apakah membuat daemon di **Rust** (gabung dalam binary Tauri) lebih menguntungkan dibanding membuat daemon terpisah menggunakan **Bun** (Node-compatible, ekosistem npm/pty yang sangat kaya)?
