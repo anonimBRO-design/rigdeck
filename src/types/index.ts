@@ -65,3 +65,16 @@ export interface DagNodeData {
   dependencies: string[];
   tokensUsed?: number;
 }
+
+export type GuiAppId = "claude" | "antigravity" | "chatgpt";
+
+export interface GuiAgentCardState {
+  appId: GuiAppId;
+  name: string;
+  role: string;
+  model: string;
+  status: "ready" | "working" | "reviewing" | "idle";
+  currentTask: string;
+  artifactOrBranch: string;
+  telemetryNote?: string;
+}

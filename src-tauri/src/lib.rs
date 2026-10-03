@@ -1,3 +1,4 @@
+pub mod app_bridge;
 pub mod blackboard;
 pub mod pty;
 pub mod router_client;
@@ -166,6 +167,33 @@ fn list_dag_events(
 }
 
 // ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// GUI App Bridge Commands (Desktop Window Control & Deep Links)
+// ----------------------------------------------------------------------------
+#[command]
+fn focus_gui_window(app_name: String) -> Result<bool, String> {
+    app_bridge::focus_app_window(&app_name)
+}
+
+#[command]
+fn dispatch_gui_url(url: String) -> Result<(), String> {
+    app_bridge::dispatch_url_scheme(&url)
+}
+
+#[command]
+fn write_pointer_task_file(task_payload_json: String) -> Result<String, String> {
+    let root = get_project_root();
+    let path = app_bridge::write_pointer_task_file(&root, &task_payload_json)?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[command]
+fn dispatch_claude_pointer_task(task_payload_json: String) -> Result<String, String> {
+    let root = get_project_root();
+    app_bridge::dispatch_claude_pointer_task(&root, &task_payload_json)
+}
+
+// ----------------------------------------------------------------------------
 // Main Application Entrypoint
 // ----------------------------------------------------------------------------
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -180,6 +208,11 @@ pub fn run() {
         .manage(pty_state)
         .manage(blackboard_state)
         .invoke_handler(tauri::generate_handler![
+            // GUI App Focus & Deep Links
+            focus_gui_window,
+            dispatch_gui_url,
+            write_pointer_task_file,
+            dispatch_claude_pointer_task,
             // Worktree
             create_agent_worktree,
             inspect_agent_diff,

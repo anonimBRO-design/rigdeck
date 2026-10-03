@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Agent, Task, LayoutMode, HitlAction, RouterTelemetry } from "../types";
+import { Agent, Task, LayoutMode, HitlAction, RouterTelemetry, GuiAppId, GuiAgentCardState } from "../types";
 
 interface RigStore {
   agents: Agent[];
@@ -20,6 +20,9 @@ interface RigStore {
   addTask: (title: string, description: string) => void;
   togglePauseAgent: (agentId: string) => void;
   injectReviewPrompt: (agentId: string, prompt: string) => void;
+  guiCards: Record<GuiAppId, GuiAgentCardState>;
+  updateGuiCard: (appId: GuiAppId, updates: Partial<GuiAgentCardState>) => void;
+  dispatchMissionDelegations: (delegations: { claudeTask?: string; antigravityTask?: string; chatgptTask?: string }) => void;
 }
 
 export const useRigStore = create<RigStore>((set) => ({
@@ -161,4 +164,75 @@ export const useRigStore = create<RigStore>((set) => ({
           : a
       ),
     })),
+
+  guiCards: {
+    claude: {
+      appId: "claude",
+      name: "Claude Desktop",
+      role: "The Architect",
+      model: "Claude Opus 5.5",
+      status: "ready",
+      currentTask: "Design System Architecture & Task Decomposition for RigDeck v1.1",
+      artifactOrBranch: "docs/spec-auth-v1.1.md",
+      telemetryNote: "RFC generated with 0 ambiguity",
+    },
+    antigravity: {
+      appId: "antigravity",
+      name: "Antigravity IDE",
+      role: "The Coder & OS",
+      model: "Gemini 2.5 Flash / Agent OS",
+      status: "working",
+      currentTask: "Implement JWT session validation & scaffold isolated git worktrees",
+      artifactOrBranch: "rig/feat-auth (.rig/worktrees/feat-auth)",
+      telemetryNote: "Running build & test suite",
+    },
+    chatgpt: {
+      appId: "chatgpt",
+      name: "ChatGPT Desktop",
+      role: "The Reviewer",
+      model: "GPT-5 Omni-Reasoning",
+      status: "reviewing",
+      currentTask: "Auditing git diff for secret leakage, token expiration & edge cases",
+      artifactOrBranch: "+142 / -18 lines in feat-auth",
+      telemetryNote: "Security grade: A+ verified",
+    },
+  },
+
+  updateGuiCard: (appId, updates) =>
+    set((state) => ({
+      guiCards: {
+        ...state.guiCards,
+        [appId]: {
+          ...state.guiCards[appId],
+          ...updates,
+        },
+      },
+    })),
+
+  dispatchMissionDelegations: (delegations) =>
+    set((state) => {
+      const nextCards = { ...state.guiCards };
+      if (delegations.claudeTask) {
+        nextCards.claude = {
+          ...nextCards.claude,
+          currentTask: delegations.claudeTask,
+          status: "working",
+        };
+      }
+      if (delegations.antigravityTask) {
+        nextCards.antigravity = {
+          ...nextCards.antigravity,
+          currentTask: delegations.antigravityTask,
+          status: "working",
+        };
+      }
+      if (delegations.chatgptTask) {
+        nextCards.chatgpt = {
+          ...nextCards.chatgpt,
+          currentTask: delegations.chatgptTask,
+          status: "reviewing",
+        };
+      }
+      return { guiCards: nextCards };
+    }),
 }));
