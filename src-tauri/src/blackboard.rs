@@ -444,7 +444,12 @@ impl BlackboardState {
 
 pub fn default_blackboard_path() -> PathBuf {
     let current = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    current.join(".rig").join("blackboard.db")
+    let root = if current.ends_with("src-tauri") {
+        current.parent().unwrap_or(&current).to_path_buf()
+    } else {
+        current
+    };
+    root.join(".rig").join("blackboard.db")
 }
 
 #[cfg(test)]

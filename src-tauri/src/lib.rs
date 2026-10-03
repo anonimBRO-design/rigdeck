@@ -10,28 +10,37 @@ use std::path::PathBuf;
 use tauri::{command, AppHandle, State};
 use worktree::{DiffResult, WorktreeManager};
 
+fn get_project_root() -> PathBuf {
+    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    if current_dir.ends_with("src-tauri") {
+        current_dir.parent().unwrap_or(&current_dir).to_path_buf()
+    } else {
+        current_dir
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Worktree Commands
 // ----------------------------------------------------------------------------
 #[command]
 fn create_agent_worktree(branch: String) -> Result<String, String> {
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mgr = WorktreeManager::new(current_dir);
+    let root = get_project_root();
+    let mgr = WorktreeManager::new(root);
     let path = mgr.create_worktree(&branch)?;
     Ok(path.to_string_lossy().to_string())
 }
 
 #[command]
 fn inspect_agent_diff(branch: String) -> Result<DiffResult, String> {
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mgr = WorktreeManager::new(current_dir);
+    let root = get_project_root();
+    let mgr = WorktreeManager::new(root);
     mgr.inspect_diff(&branch)
 }
 
 #[command]
 fn remove_agent_worktree(branch: String) -> Result<(), String> {
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mgr = WorktreeManager::new(current_dir);
+    let root = get_project_root();
+    let mgr = WorktreeManager::new(root);
     mgr.remove_worktree(&branch)
 }
 

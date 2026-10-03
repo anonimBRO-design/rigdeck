@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useRigStore } from "../store/useRigStore";
 import { LayoutMode } from "../types";
 import {
@@ -9,8 +10,42 @@ import {
   Zap,
 } from "lucide-react";
 
+interface RouterHealthResponse {
+  online: boolean;
+  active_models_count: number;
+  latency_ms: number;
+}
+
 export const Header: React.FC = () => {
-  const { layoutMode, setLayoutMode, telemetry } = useRigStore();
+  const { layoutMode, setLayoutMode } = useRigStore();
+  const [routerHealth, setRouterHealth] = useState<RouterHealthResponse>({
+    online: false,
+    active_models_count: 0,
+    latency_ms: 0,
+  });
+
+  // Poll REAL 9Router status from Rust backend every 4 seconds
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkHealth = async () => {
+      try {
+        const res = await invoke<RouterHealthResponse>("get_router_status");
+        if (isMounted) {
+          setRouterHealth(res);
+        }
+      } catch (e) {
+        console.warn("9Router poll error:", e);
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const layoutButtons: { mode: LayoutMode; icon: React.ReactNode; label: string }[] = [
     { mode: "focus", icon: <Layers size={14} />, label: "Focus (1)" },
@@ -29,23 +64,35 @@ export const Header: React.FC = () => {
           <div>
             <span className="font-bold tracking-tight text-slate-100 text-sm">RigDeck</span>
             <span className="text-[10px] text-blue-400 font-mono ml-2 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
-              v1.1-PROD
+              v1.1-LIVE
             </span>
           </div>
         </div>
 
         <div className="h-4 w-[1px] bg-rig-border mx-1" />
 
-        {/* 9Router Telemetry Pill */}
+        {/* Real-time 9Router Telemetry Pill */}
         <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 rounded-full px-2.5 py-1 text-xs">
-          <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+          <div
+            className={`h-2 w-2 rounded-full ${
+              routerHealth.online
+                ? "bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50"
+                : "bg-red-400"
+            }`}
+          />
           <span className="text-slate-300 font-mono text-[11px]">9Router :20128</span>
           <span className="text-slate-500 font-mono text-[11px]">•</span>
-          <span className="text-emerald-400 font-mono text-[11px]">{telemetry.latencyMs}ms</span>
+          <span
+            className={`font-mono text-[11px] ${
+              routerHealth.online ? "text-emerald-400" : "text-red-400"
+            }`}
+          >
+            {routerHealth.online ? `${routerHealth.latency_ms}ms` : "Offline"}
+          </span>
           <span className="text-slate-500 font-mono text-[11px]">•</span>
           <span className="text-slate-400 font-mono text-[11px] flex items-center gap-1">
             <Zap size={11} className="text-amber-400" />
-            {(telemetry.tokensProcessed / 1000).toFixed(1)}k tokens
+            {routerHealth.active_models_count} models loaded
           </span>
         </div>
       </div>

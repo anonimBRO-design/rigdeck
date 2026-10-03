@@ -3,6 +3,8 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useRigStore } from "../store/useRigStore";
 import { Agent } from "../types";
 import {
@@ -10,10 +12,16 @@ import {
   Pause,
   AlertTriangle,
   FolderGit2,
+  RotateCcw,
 } from "lucide-react";
 
 interface AgentTerminalCardProps {
   agent: Agent;
+}
+
+interface PtyOutputPayload {
+  agent_id: string;
+  data: string;
 }
 
 const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
@@ -56,44 +64,89 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
       webglAddon.onContextLoss(() => webglAddon.dispose());
       term.loadAddon(webglAddon);
     } catch {
-      // Graceful fallback to default canvas/DOM renderer
       console.warn("WebGL not supported, falling back to standard DOM renderer");
     }
 
     fitAddon.fit();
     termInstanceRef.current = term;
 
-    // Simulated initial PTY greeting & activity
-    term.writeln(`\x1b[38;5;39m[RigDeck PTY Agent: ${agent.name} (${agent.id})]\x1b[0m`);
-    term.writeln(`\x1b[90mModel: ${agent.model} | Role: ${agent.role}\x1b[0m`);
-    if (agent.worktreePath) {
-      term.writeln(`\x1b[33m⚡ Worktree: ${agent.worktreePath}\x1b[0m`);
-    }
-    term.writeln(`\x1b[90m--------------------------------------------------\x1b[0m`);
+    // Connect to REAL native PTY via Tauri IPC
+    let isMounted = true;
+    let unlistenOutput: (() => void) | null = null;
 
-    if (agent.status === "running") {
-      term.writeln(`\x1b[32m✔ Loaded context from Blackboard SQLite (task-101)\x1b[0m`);
-      term.writeln(`\x1b[36m⚙ Executing turn via 9Router (http://127.0.0.1:20128/v1)...\x1b[0m`);
-      term.writeln(`\x1b[90m> git status --porcelain\x1b[0m`);
-      term.writeln(`M  src/middleware/auth.ts`);
-      term.writeln(`M  src/utils/jwt.ts`);
-      term.writeln(`\x1b[32m✔ Lint and syntax check passed with 0 warnings.\x1b[0m`);
-    } else if (agent.status === "waiting_approval") {
-      term.writeln(`\x1b[31m⚠ ACTION INTERCEPTED: Dangerous command detected\x1b[0m`);
-      term.writeln(`\x1b[33m> git push origin --force-with-lease rig/feat-auth\x1b[0m`);
-      term.writeln(`\x1b[38;5;214mWaiting for Human-In-The-Loop approval...\x1b[0m`);
-    } else {
-      term.writeln(`\x1b[90mAgent is standby. Waiting for DAG event trigger...\x1b[0m`);
-    }
+    const initPty = async () => {
+      try {
+        // 1. Spawn native PTY session for this agent
+        await invoke("spawn_pty", {
+          agentId: agent.id,
+          cmd: "bash",
+          args: ["-i"],
+          cwd: agent.worktreePath || null,
+          rows: term.rows || 24,
+          cols: term.cols || 80,
+        });
 
-    const handleResize = () => fitAddon.fit();
+        // 2. Listen for asynchronous output stream from backend
+        unlistenOutput = await listen<PtyOutputPayload>("pty-output", (event) => {
+          if (!isMounted) return;
+          if (event.payload.agent_id === agent.id) {
+            term.write(event.payload.data);
+          }
+        });
+
+        // Initial info banner in terminal
+        term.writeln(`\x1b[38;5;39m[RigDeck Native PTY Connected: ${agent.name} (${agent.id})]\x1b[0m`);
+        term.writeln(`\x1b[90mModel: ${agent.model} | Role: ${agent.role}\x1b[0m`);
+        term.writeln(`\x1b[90mConnected to CachyOS Linux PTY engine (portable-pty v0.8)\x1b[0m`);
+        term.writeln(`\x1b[90m--------------------------------------------------\x1b[0m`);
+      } catch (err) {
+        term.writeln(`\x1b[31m[PTY Error]: Failed to attach session: ${err}\x1b[0m`);
+      }
+    };
+
+    initPty();
+
+    // 3. Forward interactive user keyboard input directly to stdin
+    const onDataDispose = term.onData((data) => {
+      invoke("write_pty", { agentId: agent.id, data }).catch(() => {});
+    });
+
+    // 4. Resize listener
+    const handleResize = () => {
+      fitAddon.fit();
+      invoke("resize_pty", {
+        agentId: agent.id,
+        rows: term.rows,
+        cols: term.cols,
+      }).catch(() => {});
+    };
+
     window.addEventListener("resize", handleResize);
 
     return () => {
+      isMounted = false;
+      onDataDispose.dispose();
       window.removeEventListener("resize", handleResize);
+      if (unlistenOutput) unlistenOutput();
+      invoke("kill_pty", { agentId: agent.id }).catch(() => {});
       term.dispose();
     };
   }, [agent]);
+
+  const handleRestartPty = () => {
+    if (!termInstanceRef.current) return;
+    invoke("kill_pty", { agentId: agent.id }).then(() => {
+      termInstanceRef.current?.clear();
+      invoke("spawn_pty", {
+        agentId: agent.id,
+        cmd: "bash",
+        args: ["-i"],
+        cwd: agent.worktreePath || null,
+        rows: termInstanceRef.current?.rows || 24,
+        cols: termInstanceRef.current?.cols || 80,
+      });
+    });
+  };
 
   const statusColor =
     agent.status === "running"
@@ -124,6 +177,13 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
 
           <div className="flex items-center gap-1">
             <button
+              onClick={handleRestartPty}
+              title="Restart PTY"
+              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              <RotateCcw size={12} />
+            </button>
+            <button
               title="Pause Agent"
               className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
             >
@@ -131,6 +191,7 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
             </button>
             <button
               title="Kill Process"
+              onClick={() => invoke("kill_pty", { agentId: agent.id })}
               className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
             >
               <AlertTriangle size={12} />

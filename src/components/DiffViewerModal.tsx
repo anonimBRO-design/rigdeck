@@ -1,9 +1,38 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useRigStore } from "../store/useRigStore";
 import { GitPullRequest, Check, X, FileCode, CheckCircle2 } from "lucide-react";
 
+interface DiffResult {
+  files_changed: number;
+  insertions: number;
+  deletions: number;
+  raw_diff: string;
+}
+
 export const DiffViewerModal: React.FC = () => {
   const { selectedDiffTask, setSelectedDiffTask, approveMergeTask } = useRigStore();
+  const [realDiff, setRealDiff] = useState<DiffResult | null>(null);
+
+  useEffect(() => {
+    if (!selectedDiffTask?.branchName) {
+      setRealDiff(null);
+      return;
+    }
+
+    const branch = selectedDiffTask.branchName.replace(/^rig\//, "");
+    invoke<DiffResult>("inspect_agent_diff", { branch })
+      .then((res) => {
+        if (res.raw_diff.trim()) {
+          setRealDiff(res);
+        } else {
+          setRealDiff(null);
+        }
+      })
+      .catch(() => {
+        setRealDiff(null);
+      });
+  }, [selectedDiffTask]);
 
   if (!selectedDiffTask) return null;
 
@@ -37,44 +66,63 @@ export const DiffViewerModal: React.FC = () => {
 
         {/* Diff Content Preview */}
         <div className="flex-1 overflow-y-auto p-4 font-mono text-xs bg-[#0c1017] text-slate-300 space-y-4">
-          <div className="border border-slate-800 rounded-lg overflow-hidden">
-            <div className="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <FileCode size={13} className="text-blue-400" />
-                src/middleware/auth.ts
-              </span>
-              <span className="text-emerald-400 font-bold">+42 -3</span>
+          {realDiff && realDiff.raw_diff.trim() ? (
+            <div className="border border-slate-800 rounded-lg overflow-hidden">
+              <div className="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <FileCode size={13} className="text-blue-400" />
+                  Live Git Diff from .rig/worktrees
+                </span>
+                <span className="text-emerald-400 font-bold">
+                  +{realDiff.insertions} -{realDiff.deletions}
+                </span>
+              </div>
+              <pre className="p-3 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-300">
+                {realDiff.raw_diff}
+              </pre>
             </div>
-            <div className="p-3 text-[11px] leading-relaxed">
-              <div className="text-slate-500">@@ -15,8 +15,14 @@ export async function authMiddleware(req: Request) &#123;</div>
-              <div className="text-slate-400">   const authHeader = req.headers.get("authorization");</div>
-              <div className="text-red-400 bg-red-950/30 px-1">-  if (!authHeader) return new Response("Unauthorized", &#123; status: 401 &#125;);</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+  if (!authHeader?.startsWith("Bearer ")) &#123;</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+    return json(&#123; error: "Bearer token required" &#125;, &#123; status: 401 &#125;);</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+  &#125;</div>
-              <div className="text-slate-400">   const token = authHeader.split(" ")[1];</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+  const payload = await verifyJwtToken(token, JWT_SECRET);</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+  req.user = payload.user;</div>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="border border-slate-800 rounded-lg overflow-hidden">
+                <div className="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <FileCode size={13} className="text-blue-400" />
+                    src/middleware/auth.ts
+                  </span>
+                  <span className="text-emerald-400 font-bold">+42 -3</span>
+                </div>
+                <div className="p-3 text-[11px] leading-relaxed">
+                  <div className="text-slate-500">@@ -15,8 +15,14 @@ export async function authMiddleware(req: Request) &#123;</div>
+                  <div className="text-slate-400">   const authHeader = req.headers.get("authorization");</div>
+                  <div className="text-red-400 bg-red-950/30 px-1">-  if (!authHeader) return new Response("Unauthorized", &#123; status: 401 &#125;);</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+  if (!authHeader?.startsWith("Bearer ")) &#123;</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+    return json(&#123; error: "Bearer token required" &#125;, &#123; status: 401 &#125;);</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+  &#125;</div>
+                  <div className="text-slate-400">   const token = authHeader.split(" ")[1];</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+  const payload = await verifyJwtToken(token, JWT_SECRET);</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+  req.user = payload.user;</div>
+                </div>
+              </div>
 
-          <div className="border border-slate-800 rounded-lg overflow-hidden">
-            <div className="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <FileCode size={13} className="text-blue-400" />
-                tests/auth.test.ts
-              </span>
-              <span className="text-emerald-400 font-bold">+68 -0</span>
-            </div>
-            <div className="p-3 text-[11px] leading-relaxed">
-              <div className="text-slate-500">@@ -0,0 +1,68 @@</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+import &#123; describe, it, expect &#125; from "vitest";</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+import &#123; verifyJwtToken &#125; from "../src/utils/jwt";</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+describe("JWT Auth Suite", () =&gt; &#123;</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+  it("rejects forged token signature", async () =&gt; &#123; ... &#125;);</div>
-              <div className="text-emerald-400 bg-emerald-950/30 px-1">+&#125;);</div>
-            </div>
-          </div>
+              <div className="border border-slate-800 rounded-lg overflow-hidden">
+                <div className="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <FileCode size={13} className="text-blue-400" />
+                    tests/auth.test.ts
+                  </span>
+                  <span className="text-emerald-400 font-bold">+68 -0</span>
+                </div>
+                <div className="p-3 text-[11px] leading-relaxed">
+                  <div className="text-slate-500">@@ -0,0 +1,68 @@</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+import &#123; describe, it, expect &#125; from "vitest";</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+import &#123; verifyJwtToken &#125; from "../src/utils/jwt";</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+describe("JWT Auth Suite", () =&gt; &#123;</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+  it("rejects forged token signature", async () =&gt; &#123; ... &#125;);</div>
+                  <div className="text-emerald-400 bg-emerald-950/30 px-1">+&#125;);</div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer Actions */}
