@@ -97,14 +97,7 @@ export const useRigStore = create<RigStore>((set) => ({
   ],
   layoutMode: "split",
   selectedAgentId: "agent-coder",
-  activeHitlAction: {
-    id: "hitl-01",
-    agentId: "agent-coder",
-    agentName: "Feature Developer",
-    command: "git push origin --force-with-lease rig/feat-auth",
-    riskLevel: "medium",
-    description: "Coder agent is attempting to force push branch updates to remote.",
-  },
+  activeHitlAction: null,
   telemetry: {
     online: true,
     activeModel: "9Router :20128 (Multi-Model Pool)",

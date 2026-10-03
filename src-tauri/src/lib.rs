@@ -1,5 +1,6 @@
 pub mod app_bridge;
 pub mod blackboard;
+pub mod memory;
 pub mod pty;
 pub mod router_client;
 pub mod worktree;
@@ -194,6 +195,39 @@ fn dispatch_claude_pointer_task(task_payload_json: String) -> Result<String, Str
 }
 
 // ----------------------------------------------------------------------------
+// Shared Memory Vault (rig-memory/) — dibaca & ditulis oleh 4 AI
+// ----------------------------------------------------------------------------
+#[command]
+fn memory_status() -> Result<memory::MemoryStatus, String> {
+    memory::status(&get_project_root())
+}
+
+#[command]
+fn memory_read_context(max_chars: Option<usize>) -> Result<String, String> {
+    memory::read_context(&get_project_root(), max_chars.unwrap_or(12_000))
+}
+
+#[command]
+fn memory_append(agent: String, kind: String, content: String) -> Result<String, String> {
+    memory::append_entry(&get_project_root(), &agent, &kind, &content)
+}
+
+#[command]
+fn memory_journal_tail(lines: Option<usize>) -> Result<Vec<String>, String> {
+    memory::journal_tail(&get_project_root(), lines.unwrap_or(20))
+}
+
+#[command]
+fn memory_list_notes() -> Result<Vec<memory::MemoryNote>, String> {
+    memory::list_notes(&get_project_root())
+}
+
+#[command]
+fn memory_read_note(path: String) -> Result<String, String> {
+    memory::read_note(&get_project_root(), &path)
+}
+
+// ----------------------------------------------------------------------------
 // Main Application Entrypoint
 // ----------------------------------------------------------------------------
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -202,6 +236,10 @@ pub fn run() {
     let db_path = default_blackboard_path();
     let blackboard_state = BlackboardState::new(db_path)
         .expect("Failed to initialize RigDeck blackboard SQLite in WAL mode");
+
+    if let Err(e) = memory::ensure_vault(&get_project_root()) {
+        eprintln!("[rigdeck] Gagal menyiapkan shared memory vault: {}", e);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
@@ -213,6 +251,13 @@ pub fn run() {
             dispatch_gui_url,
             write_pointer_task_file,
             dispatch_claude_pointer_task,
+            // Shared Memory
+            memory_status,
+            memory_read_context,
+            memory_append,
+            memory_journal_tail,
+            memory_list_notes,
+            memory_read_note,
             // Worktree
             create_agent_worktree,
             inspect_agent_diff,

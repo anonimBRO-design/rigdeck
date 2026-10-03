@@ -32,6 +32,10 @@ impl WorktreeManager {
     pub fn create_worktree(&self, branch_name: &str) -> Result<PathBuf, String> {
         let worktree_dir = self.root_dir.join(".rig").join("worktrees").join(branch_name);
         
+        if worktree_dir.exists() {
+            return Ok(worktree_dir);
+        }
+
         // Ensure parent directory exists
         if let Some(parent) = worktree_dir.parent() {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;

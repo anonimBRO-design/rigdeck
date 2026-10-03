@@ -19,6 +19,11 @@ import {
 } from "lucide-react";
 
 import { createConductorTaskJson } from "../services/conductorAi";
+import { appendMemory } from "../services/sharedMemory";
+import { SharedMemoryFeed } from "./SharedMemoryFeed";
+
+const MEMORY_INSTRUCTION =
+  "Sebelum mulai, baca AGENTS.md dan rig-memory/ (00-INDEX, 02-Decisions, journal terbaru). Setelah selesai, tulis ringkasan satu baris ke rig-memory/journal/ sesuai format di AGENTS.md.";
 
 export const GuiControllerDeck: React.FC = () => {
   const { guiCards, updateGuiCard, setSelectedDiffTask, tasks } = useRigStore();
@@ -61,9 +66,11 @@ export const GuiControllerDeck: React.FC = () => {
       // 2. Also copy pointer prompt to clipboard for user convenience
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(
-          "RigDeck Mission Control: Buka dan rancang arsitektur sesuai file .rig/context/current_task.json"
+          `RigDeck Mission Control: rancang arsitektur sesuai file .rig/context/current_task.json. ${MEMORY_INSTRUCTION}`
         );
       }
+
+      await appendMemory("conductor", "handoff", `Spec dikirim ke claude: ${guiCards.claude.currentTask}`);
 
       updateGuiCard("claude", {
         status: "working",
@@ -72,27 +79,29 @@ export const GuiControllerDeck: React.FC = () => {
       showHud("Tiket ditulis ke .rig/context/current_task.json & Claude Desktop difokuskan!");
     } catch (err) {
       console.warn("Could not dispatch pointer task via Tauri invoke:", err);
-      updateGuiCard("claude", {
-        status: "working",
-        telemetryNote: "Spec disiapkan di .rig/context/current_task.json",
-      });
-      showHud("Spesifikasi RFC disiapkan untuk Claude Desktop!");
+      showHud(`Gagal mengirim spec ke Claude: ${err}`);
     }
   };
 
   const handleRunCode = async () => {
+    await handleFocusWindow("antigravity", "Antigravity");
     try {
-      await handleFocusWindow("antigravity", "Antigravity");
-      // Prepare worktree if needed
-      await invoke("create_agent_worktree", { branch: "feat-impl" }).catch(() => {});
+      const path = await invoke<string>("create_agent_worktree", { branch: "feat-impl" });
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(
+          `Kerjakan di worktree ${path}: ${guiCards.antigravity.currentTask}. ${MEMORY_INSTRUCTION}`
+        );
+      }
+      await appendMemory("conductor", "handoff", `Tugas dikirim ke antigravity (worktree ${path}): ${guiCards.antigravity.currentTask}`);
       updateGuiCard("antigravity", {
         status: "working",
-        telemetryNote: "Worktree feat-impl aktif, window diaktifkan",
+        artifactOrBranch: path,
+        telemetryNote: "Worktree siap, prompt disalin ke clipboard",
       });
-      showHud("Antigravity diaktifkan dengan isolated git worktree!");
+      showHud("Antigravity difokuskan, worktree siap & prompt disalin ke clipboard!");
     } catch (err) {
       console.error(err);
-      showHud("Antigravity test runner aktif!");
+      showHud(`Gagal menyiapkan worktree: ${err}`);
     }
   };
 
@@ -105,9 +114,10 @@ export const GuiControllerDeck: React.FC = () => {
     await handleFocusWindow("chatgpt", "ChatGPT Desktop");
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(
-        `Audit review git diff untuk branch ${guiCards.antigravity.artifactOrBranch || "feat-impl"}:\n- Periksa potensi secret leakage\n- Validasi edge-case handling\n- Evaluasi efisiensi memori & async concurrency`
+        `Audit review git diff untuk branch ${guiCards.antigravity.artifactOrBranch || "feat-impl"}:\n- Periksa potensi secret leakage\n- Validasi edge-case handling\n- Evaluasi efisiensi memori & async concurrency\n\n${MEMORY_INSTRUCTION}`
       );
     }
+    await appendMemory("conductor", "handoff", `Review diff diminta ke chatgpt: ${guiCards.chatgpt.currentTask}`);
     updateGuiCard("chatgpt", {
       status: "reviewing",
       telemetryNote: "Diff prompt disalin ke clipboard & ChatGPT difokuskan",
@@ -422,6 +432,9 @@ export const GuiControllerDeck: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Shared Memory Feed — journal bersama 4 AI */}
+      <SharedMemoryFeed />
     </div>
   );
 };

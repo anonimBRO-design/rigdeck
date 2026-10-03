@@ -122,7 +122,7 @@ pub fn dispatch_claude_pointer_task(
 ) -> Result<String, String> {
     let file_path = write_pointer_task_file(project_root, task_payload_json)?;
 
-    let prompt = "RigDeck Mission Control: Buka dan rancang arsitektur sesuai file .rig/context/current_task.json";
+    let prompt = "RigDeck Mission Control: Baca rig-memory/00-INDEX.md (shared memory), lalu rancang arsitektur sesuai file .rig/context/current_task.json. Catat hasilmu di rig-memory/journal/.";
     let encoded_prompt = urlencoding_encode(prompt);
     let deep_link = format!(
         "claude://claude.ai/new?q={}&source=rigdeck",

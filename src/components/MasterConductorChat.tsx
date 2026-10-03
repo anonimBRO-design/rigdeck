@@ -1,7 +1,22 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useRigStore } from "../store/useRigStore";
-import { ConductorMessage, sendConductorPrompt, createConductorTaskJson } from "../services/conductorAi";
+import {
+  ConductorMessage,
+  ChatTurn,
+  RouterModel,
+  DEFAULT_CONDUCTOR_MODEL,
+  sendConductorPrompt,
+  createConductorTaskJson,
+  fetchRouterModels,
+  groupModels,
+} from "../services/conductorAi";
+import {
+  MemoryStatus,
+  readMemoryContext,
+  appendMemory,
+  getMemoryStatus,
+} from "../services/sharedMemory";
 import {
   Sparkles,
   Send,
@@ -15,19 +30,16 @@ import {
   Loader2,
   Trash2,
   Zap,
+  Brain,
+  RefreshCw,
 } from "lucide-react";
 
 const INITIAL_MESSAGES: ConductorMessage[] = [
   {
     id: "msg-1",
     sender: "conductor",
-    text: "Halo Afgan! Saya **Master AI Conductor** yang ditenagai oleh **9Router**. Berikan saya tujuan software atau fitur baru yang ingin kamu bangun. Saya akan menganalisis arsitektur sistem, membagi tiket kerja, dan mendistribusikannya secara otomatis ke 3 Desktop AI:",
-    timestamp: "22:30",
-    delegations: {
-      claudeTask: "Design System Architecture & Task Decomposition for RigDeck v1.1",
-      antigravityTask: "Implement JWT session validation & scaffold isolated git worktrees",
-      chatgptTask: "Auditing git diff for secret leakage, token expiration & edge cases",
-    },
+    text: "Halo Afgan! Saya **Master AI Conductor** yang ditenagai oleh **9Router**. Berikan tujuan software atau fitur yang ingin kamu bangun — saya akan membaca shared memory (rig-memory/), memecah misinya, lalu mendelegasikan ke Claude Desktop, Antigravity, dan ChatGPT Desktop.",
+    timestamp: "--:--",
   },
 ];
 
@@ -37,12 +49,24 @@ const QUICK_STARTERS = [
   "Audit Keamanan Diff & Sanitasi SQL injection di Blackboard WAL",
 ];
 
+const MODEL_STORAGE_KEY = "rigdeck.conductorModel";
+
 export const MasterConductorChat: React.FC = () => {
   const { dispatchMissionDelegations, telemetry } = useRigStore();
   const [messages, setMessages] = useState<ConductorMessage[]>(INITIAL_MESSAGES);
   const [inputValue, setInputValue] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [thinkingStep, setThinkingStep] = useState<string>("Analyzing objective...");
+
+  // Model picker (daftar diambil live dari 9Router /v1/models)
+  const [models, setModels] = useState<RouterModel[]>([]);
+  const [modelsError, setModelsError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>(
+    () => localStorage.getItem(MODEL_STORAGE_KEY) || DEFAULT_CONDUCTOR_MODEL
+  );
+
+  // Shared memory status
+  const [memoryStatus, setMemoryStatus] = useState<MemoryStatus | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,6 +79,28 @@ export const MasterConductorChat: React.FC = () => {
     scrollToBottom();
   }, [messages, isThinking]);
 
+  const loadModels = async () => {
+    try {
+      setModelsError(null);
+      setModels(await fetchRouterModels());
+    } catch (err) {
+      setModelsError(String(err));
+    }
+  };
+
+  useEffect(() => {
+    loadModels();
+    getMemoryStatus().then(setMemoryStatus);
+  }, []);
+
+  const handleModelChange = (id: string) => {
+    setSelectedModel(id);
+    localStorage.setItem(MODEL_STORAGE_KEY, id);
+  };
+
+  const groupedModels = useMemo(() => groupModels(models), [models]);
+  const modelKnown = models.length === 0 || models.some((m) => m.id === selectedModel);
+
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || inputValue).trim();
     if (!text || isThinking) return;
@@ -66,47 +112,42 @@ export const MasterConductorChat: React.FC = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
+    // Riwayat percakapan sebelumnya (tanpa pesan sambutan) untuk konteks multi-turn
+    const history: ChatTurn[] = messages
+      .filter((m) => m.id !== "msg-1")
+      .map((m) => ({ role: m.sender === "user" ? "user" : "assistant", content: m.text }));
+
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setIsThinking(true);
-    setThinkingStep("Membaca arsitektur & konteks git worktree...");
-
-    // Simulated animated thinking steps for realistic feel
-    const stepTimer1 = setTimeout(() => {
-      setThinkingStep("Mengurai sub-tiket & kontrak antarmuka via 9Router...");
-    }, 900);
-
-    const stepTimer2 = setTimeout(() => {
-      setThinkingStep("Mensintesis delegasi untuk Claude, Antigravity, & ChatGPT...");
-    }, 1800);
+    setThinkingStep("Membaca shared memory (rig-memory/)...");
 
     try {
-      const response = await sendConductorPrompt(text);
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
+      const memoryContext = await readMemoryContext();
+      setThinkingStep(`Mengirim ke 9Router • ${selectedModel}...`);
 
-      let replyText = response.replyText;
-      let delegations = response.delegations;
-
-      // Intelligent fallback if 9Router returned an error connection message
-      if (replyText.startsWith("[Error dari 9Router]")) {
-        replyText = `Misi diterima: **"${text}"**!\n\nSaya telah membedah kebutuhan ini ke dalam 3 pipeline terkoordinasi: arsitektur spec untuk Claude, implementasi kode worktree untuk Antigravity, dan review diff untuk ChatGPT.`;
-        delegations = {
-          claudeTask: `Merancang spesifikasi RFC teknis & skema database untuk: ${text}`,
-          antigravityTask: `Implementasi kode & test runner di branch terisolasi untuk: ${text}`,
-          chatgptTask: `Audit git diff, benchmark performa & review keamanan untuk: ${text}`,
-        };
-      }
+      const response = await sendConductorPrompt(text, selectedModel, { memoryContext, history });
+      const isError = response.replyText.startsWith("[Error dari 9Router]");
+      const delegations = isError ? undefined : response.delegations;
 
       const conductorMsg: ConductorMessage = {
         id: `msg-${Date.now() + 1}`,
         sender: "conductor",
-        text: replyText,
+        text: response.replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         delegations,
       };
 
       setMessages((prev) => [...prev, conductorMsg]);
+      if (isError) return;
+
+      // Catat misi ke shared memory supaya Claude, Antigravity & ChatGPT tahu konteksnya
+      const memoryLines = [`Misi dari Afgan: "${text}" (model: ${selectedModel})`];
+      if (delegations?.claudeTask) memoryLines.push(`→ claude: ${delegations.claudeTask}`);
+      if (delegations?.antigravityTask) memoryLines.push(`→ antigravity: ${delegations.antigravityTask}`);
+      if (delegations?.chatgptTask) memoryLines.push(`→ chatgpt: ${delegations.chatgptTask}`);
+      await appendMemory("conductor", "mission", memoryLines.join("\n"));
+      getMemoryStatus().then(setMemoryStatus);
 
       if (delegations) {
         dispatchMissionDelegations(delegations);
@@ -175,6 +216,51 @@ export const MasterConductorChat: React.FC = () => {
         </button>
       </div>
 
+      {/* Model Picker + Shared Memory badge */}
+      <div className="px-3.5 py-2 border-b border-rig-border bg-slate-950/70 flex items-center gap-2">
+        <Cpu size={13} className="text-indigo-400 shrink-0" />
+        <select
+          value={selectedModel}
+          onChange={(e) => handleModelChange(e.target.value)}
+          disabled={isThinking}
+          title="Pilih model untuk Master Conductor (dari 9Router)"
+          className="flex-1 min-w-0 bg-slate-900 border border-slate-700 hover:border-indigo-500/60 focus:border-indigo-500 rounded-md px-2 py-1 text-[11px] font-mono text-slate-200 outline-none cursor-pointer disabled:opacity-50"
+        >
+          {!modelKnown && <option value={selectedModel}>{selectedModel} (tidak tersedia)</option>}
+          {models.length === 0 && <option value={selectedModel}>{selectedModel}</option>}
+          {Object.entries(groupedModels).map(([group, list]) => (
+            <optgroup key={group} label={`${group} (${list.length})`}>
+              {list.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.id}
+                  {m.contextWindow ? ` · ${Math.round(m.contextWindow / 1000)}k` : ""}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <button
+          onClick={loadModels}
+          title={modelsError ? `Gagal memuat model: ${modelsError}` : "Muat ulang daftar model"}
+          className={`p-1 rounded-md hover:bg-slate-800 transition-colors ${
+            modelsError ? "text-rose-400" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <RefreshCw size={12} />
+        </button>
+        <span
+          title={memoryStatus ? `Vault: ${memoryStatus.vault_path}` : "Shared memory belum aktif"}
+          className={`flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${
+            memoryStatus
+              ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
+              : "bg-slate-800 text-slate-500 border-slate-700"
+          }`}
+        >
+          <Brain size={11} />
+          {memoryStatus ? `${memoryStatus.note_count} notes` : "off"}
+        </span>
+      </div>
+
       {/* Chat Messages Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
@@ -194,7 +280,7 @@ export const MasterConductorChat: React.FC = () => {
                 ) : (
                   <>
                     <Bot size={11} className="text-indigo-400" />
-                    <span className="text-indigo-300 font-semibold">Master Conductor (Opus 5.5)</span>
+                    <span className="text-indigo-300 font-semibold">Master Conductor</span>
                     <span>• {msg.timestamp}</span>
                   </>
                 )}
