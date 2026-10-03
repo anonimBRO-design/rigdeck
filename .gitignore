@@ -1,0 +1,9 @@
+node_modules/
+.rig/
+dist/
+build/
+target/
+*.sqlite*
+.DS_Store
+*.log
+.env
