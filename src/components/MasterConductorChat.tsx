@@ -18,7 +18,6 @@ import {
   getMemoryStatus,
 } from "../services/sharedMemory";
 import {
-  Sparkles,
   Send,
   Bot,
   User,
@@ -29,7 +28,6 @@ import {
   CheckCircle2,
   Loader2,
   Trash2,
-  Zap,
   Brain,
   RefreshCw,
 } from "lucide-react";
@@ -41,12 +39,6 @@ const INITIAL_MESSAGES: ConductorMessage[] = [
     text: "Halo Afgan! Saya **Master AI Conductor** yang ditenagai oleh **9Router**. Berikan tujuan software atau fitur yang ingin kamu bangun — saya akan membaca shared memory (rig-memory/), memecah misinya, lalu mendelegasikan ke Claude Desktop, Antigravity, dan ChatGPT Desktop.",
     timestamp: "--:--",
   },
-];
-
-const QUICK_STARTERS = [
-  "Bangun JWT Auth dengan Refresh Token Rotation & Cookie Guard",
-  "Refactor Multi-PTY stream ke WebGL Native dengan fallback DOM",
-  "Audit Keamanan Diff & Sanitasi SQL injection di Blackboard WAL",
 ];
 
 const MODEL_STORAGE_KEY = "rigdeck.conductorModel";
@@ -182,27 +174,27 @@ export const MasterConductorChat: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0e17] border-r border-rig-border w-[440px] shrink-0 select-none overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-[#141414] border-r border-[#242424] w-[420px] shrink-0 select-none overflow-hidden">
       {/* Header Conductor */}
-      <div className="p-3.5 border-b border-rig-border bg-slate-900/90 flex items-center justify-between backdrop-blur-md">
+      <div className="p-3 border-b border-[#242424] bg-[#181818] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-blue-500/25">
-            <Sparkles size={16} className="text-white animate-pulse" />
+          <div className="h-7 w-7 rounded bg-[#222222] border border-[#303030] flex items-center justify-center text-[#007acc]">
+            <Bot size={15} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
-                Master AI Conductor
+              <h2 className="text-xs font-semibold text-white tracking-wide">
+                Master Conductor
               </h2>
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#202020] text-[#888888] border border-[#2e2e2e]">
                 9Router
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-              <span>Orchestrating 3 Desktop GUIs</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-400">{telemetry.latencyMs}ms</span>
+            <p className="text-[10px] text-[#777777] font-mono flex items-center gap-1.5 mt-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] inline-block" />
+              <span>3 Desktop GUIs</span>
+              <span className="text-[#444444]">•</span>
+              <span className="text-[#888888]">{telemetry.latencyMs}ms</span>
             </p>
           </div>
         </div>
@@ -210,21 +202,21 @@ export const MasterConductorChat: React.FC = () => {
         <button
           onClick={() => setMessages(INITIAL_MESSAGES)}
           title="Reset Conductor Chat"
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded text-[#777777] hover:text-[#cccccc] hover:bg-[#222222] transition-colors"
         >
           <Trash2 size={13} />
         </button>
       </div>
 
       {/* Model Picker + Shared Memory badge */}
-      <div className="px-3.5 py-2 border-b border-rig-border bg-slate-950/70 flex items-center gap-2">
-        <Cpu size={13} className="text-indigo-400 shrink-0" />
+      <div className="px-3 py-1.5 border-b border-[#242424] bg-[#161616] flex items-center gap-2">
+        <Cpu size={13} className="text-[#777777] shrink-0" />
         <select
           value={selectedModel}
           onChange={(e) => handleModelChange(e.target.value)}
           disabled={isThinking}
           title="Pilih model untuk Master Conductor (dari 9Router)"
-          className="flex-1 min-w-0 bg-slate-900 border border-slate-700 hover:border-indigo-500/60 focus:border-indigo-500 rounded-md px-2 py-1 text-[11px] font-mono text-slate-200 outline-none cursor-pointer disabled:opacity-50"
+          className="flex-1 min-w-0 bg-[#1e1e1e] border border-[#2e2e2e] hover:border-[#3e3e3e] focus:border-[#007acc] rounded px-2 py-1 text-[11px] font-mono text-[#cccccc] outline-none cursor-pointer disabled:opacity-50"
         >
           {!modelKnown && <option value={selectedModel}>{selectedModel} (tidak tersedia)</option>}
           {models.length === 0 && <option value={selectedModel}>{selectedModel}</option>}
@@ -242,18 +234,18 @@ export const MasterConductorChat: React.FC = () => {
         <button
           onClick={loadModels}
           title={modelsError ? `Gagal memuat model: ${modelsError}` : "Muat ulang daftar model"}
-          className={`p-1 rounded-md hover:bg-slate-800 transition-colors ${
-            modelsError ? "text-rose-400" : "text-slate-400 hover:text-slate-200"
+          className={`p-1 rounded hover:bg-[#222222] transition-colors ${
+            modelsError ? "text-rose-400" : "text-[#777777] hover:text-[#cccccc]"
           }`}
         >
           <RefreshCw size={12} />
         </button>
         <span
           title={memoryStatus ? `Vault: ${memoryStatus.vault_path}` : "Shared memory belum aktif"}
-          className={`flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${
+          className={`flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
             memoryStatus
-              ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
-              : "bg-slate-800 text-slate-500 border-slate-700"
+              ? "bg-[#1f1f1f] text-[#a0a0a0] border-[#2e2e2e]"
+              : "bg-[#181818] text-[#555555] border-[#242424]"
           }`}
         >
           <Brain size={11} />
@@ -262,7 +254,7 @@ export const MasterConductorChat: React.FC = () => {
       </div>
 
       {/* Chat Messages Body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5">
         {messages.map((msg) => {
           const isUser = msg.sender === "user";
 
@@ -271,16 +263,16 @@ export const MasterConductorChat: React.FC = () => {
               key={msg.id}
               className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
             >
-              <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-500 font-mono px-1">
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] text-[#666666] font-mono px-1">
                 {isUser ? (
                   <>
-                    <span>Afgan (Operator)</span>
-                    <User size={11} className="text-blue-400" />
+                    <span>Afgan</span>
+                    <User size={10} className="text-[#888888]" />
                   </>
                 ) : (
                   <>
-                    <Bot size={11} className="text-indigo-400" />
-                    <span className="text-indigo-300 font-semibold">Master Conductor</span>
+                    <Bot size={10} className="text-[#007acc]" />
+                    <span className="text-[#a0a0a0] font-medium">Master Conductor</span>
                     <span>• {msg.timestamp}</span>
                   </>
                 )}
@@ -288,38 +280,37 @@ export const MasterConductorChat: React.FC = () => {
 
               {/* Message Bubble */}
               <div
-                className={`max-w-[92%] p-3.5 rounded-2xl text-xs leading-relaxed transition-all shadow-md ${
+                className={`max-w-[92%] p-3 rounded-lg text-xs leading-relaxed ${
                   isUser
-                    ? "bg-blue-600/30 text-blue-100 border border-blue-500/40 rounded-tr-sm"
-                    : "bg-slate-900/90 text-slate-200 border border-slate-800 rounded-tl-sm backdrop-blur-md"
+                    ? "bg-[#222222] text-[#f0f0f0] border border-[#303030]"
+                    : "bg-[#181818] text-[#cccccc] border border-[#262626]"
                 }`}
               >
                 <div className="whitespace-pre-wrap">{msg.text}</div>
 
                 {/* Delegation Matrix Card if present */}
                 {msg.delegations && (
-                  <div className="mt-3.5 pt-3 border-t border-slate-800/80 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                      <span className="uppercase tracking-wider font-semibold text-cyan-400 flex items-center gap-1">
-                        <Zap size={11} />
+                  <div className="mt-3 pt-2.5 border-t border-[#262626] space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[#777777]">
+                      <span className="uppercase tracking-wider font-medium text-[#aaaaaa] flex items-center gap-1">
                         Dispatched to 3 Desktop GUIs:
                       </span>
-                      <span className="text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 size={10} /> Active Sync
+                      <span className="text-[#10b981] flex items-center gap-1">
+                        <CheckCircle2 size={10} /> Active
                       </span>
                     </div>
 
                     {/* 🟠 Claude Delegation */}
                     {msg.delegations.claudeTask && (
-                      <div className="p-2 rounded-lg bg-amber-950/20 border border-amber-500/30 flex items-start gap-2">
-                        <div className="p-1 rounded bg-amber-500/20 text-amber-400 mt-0.5 shrink-0">
+                      <div className="p-2 rounded bg-[#1a1714] border border-[#2e261e] flex items-start gap-2">
+                        <div className="p-1 rounded bg-[#261f18] text-[#d97706] mt-0.5 shrink-0">
                           <Layers size={11} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold text-amber-300 block">
+                          <span className="text-[10px] font-semibold text-[#d97706] block">
                             Claude Desktop (The Architect)
                           </span>
-                          <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5">
+                          <p className="text-[11px] text-[#b0b0b0] line-clamp-2 mt-0.5">
                             {msg.delegations.claudeTask}
                           </p>
                         </div>
@@ -328,15 +319,15 @@ export const MasterConductorChat: React.FC = () => {
 
                     {/* 🔵 Antigravity Delegation */}
                     {msg.delegations.antigravityTask && (
-                      <div className="p-2 rounded-lg bg-cyan-950/20 border border-cyan-500/30 flex items-start gap-2">
-                        <div className="p-1 rounded bg-cyan-500/20 text-cyan-400 mt-0.5 shrink-0">
+                      <div className="p-2 rounded bg-[#141920] border border-[#1e2734] flex items-start gap-2">
+                        <div className="p-1 rounded bg-[#1a2330] text-[#007acc] mt-0.5 shrink-0">
                           <Code2 size={11} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold text-cyan-300 block">
+                          <span className="text-[10px] font-semibold text-[#007acc] block">
                             Antigravity IDE (The Coder & OS)
                           </span>
-                          <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5">
+                          <p className="text-[11px] text-[#b0b0b0] line-clamp-2 mt-0.5">
                             {msg.delegations.antigravityTask}
                           </p>
                         </div>
@@ -345,15 +336,15 @@ export const MasterConductorChat: React.FC = () => {
 
                     {/* ⚪ ChatGPT Delegation */}
                     {msg.delegations.chatgptTask && (
-                      <div className="p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 flex items-start gap-2">
-                        <div className="p-1 rounded bg-emerald-500/20 text-emerald-400 mt-0.5 shrink-0">
+                      <div className="p-2 rounded bg-[#141c18] border border-[#1e2c24] flex items-start gap-2">
+                        <div className="p-1 rounded bg-[#182620] text-[#10b981] mt-0.5 shrink-0">
                           <ShieldCheck size={11} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold text-emerald-300 block">
+                          <span className="text-[10px] font-semibold text-[#10b981] block">
                             ChatGPT Desktop (The Reviewer)
                           </span>
-                          <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5">
+                          <p className="text-[11px] text-[#b0b0b0] line-clamp-2 mt-0.5">
                             {msg.delegations.chatgptTask}
                           </p>
                         </div>
@@ -368,21 +359,21 @@ export const MasterConductorChat: React.FC = () => {
 
         {/* Thinking & Decomposing Mission Animation */}
         {isThinking && (
-          <div className="flex flex-col items-start space-y-1 animate-fadeIn">
-            <div className="flex items-center gap-1.5 text-[10px] text-indigo-400 font-mono px-1">
+          <div className="flex flex-col items-start space-y-1">
+            <div className="flex items-center gap-1.5 text-[10px] text-[#777777] font-mono px-1">
               <Bot size={11} />
-              <span>Master Conductor (9Router)</span>
+              <span>Master Conductor</span>
             </div>
-            <div className="p-3.5 rounded-2xl rounded-tl-sm bg-slate-900/90 border border-blue-500/40 text-xs text-slate-300 shadow-xl shadow-blue-500/10 space-y-2 max-w-[90%]">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold font-mono text-[11px]">
-                <Loader2 size={13} className="animate-spin text-blue-400" />
-                <span>Thinking & Decomposing Mission...</span>
+            <div className="p-3 rounded-lg bg-[#181818] border border-[#2a2a2a] text-xs text-[#a0a0a0] space-y-2 max-w-[90%]">
+              <div className="flex items-center gap-2 text-[#cccccc] font-medium font-mono text-[11px]">
+                <Loader2 size={12} className="animate-spin text-[#007acc]" />
+                <span>Memproses misi...</span>
               </div>
-              <p className="text-[11px] text-slate-400 font-mono animate-pulse">
+              <p className="text-[11px] text-[#777777] font-mono">
                 {thinkingStep}
               </p>
-              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 animate-[pulse_1s_infinite] w-3/4 rounded-full" />
+              <div className="h-1 w-full bg-[#242424] rounded-full overflow-hidden">
+                <div className="h-full bg-[#007acc] animate-[pulse_1s_infinite] w-2/3 rounded-full" />
               </div>
             </div>
           </div>
@@ -391,27 +382,8 @@ export const MasterConductorChat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Mission Starter Chips */}
-      <div className="px-3 py-2 bg-slate-950/60 border-t border-rig-border/50">
-        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block mb-1">
-          Quick Mission Presets:
-        </span>
-        <div className="flex flex-col gap-1">
-          {QUICK_STARTERS.map((starter) => (
-            <button
-              key={starter}
-              onClick={() => handleSend(starter)}
-              disabled={isThinking}
-              className="text-[10px] text-left text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 px-2 py-1 rounded transition-colors truncate border border-transparent hover:border-slate-700/60"
-            >
-              + {starter}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Chat Input Bar */}
-      <div className="p-3 bg-slate-900/90 border-t border-rig-border backdrop-blur-md">
+      <div className="p-3 bg-[#181818] border-t border-[#242424]">
         <div className="relative">
           <textarea
             ref={textareaRef}
@@ -419,23 +391,23 @@ export const MasterConductorChat: React.FC = () => {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={2}
-            placeholder="Ketik tujuan besar proyek... (Enter untuk kirim)"
+            placeholder="Ketik tujuan proyek... (Enter untuk kirim)"
             disabled={isThinking}
-            className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none pr-10"
+            className="w-full bg-[#131313] border border-[#282828] rounded-lg px-3 py-2 text-xs text-[#f0f0f0] placeholder:text-[#555555] focus:outline-none focus:border-[#007acc] resize-none pr-10"
           />
           <button
             onClick={() => handleSend()}
             disabled={!inputValue.trim() || isThinking}
-            className="absolute right-2.5 bottom-3.5 p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white transition-all shadow-md shadow-blue-500/20"
+            className="absolute right-2 bottom-3 p-1.5 rounded bg-[#007acc] hover:bg-[#0062a3] disabled:opacity-30 text-white transition-colors"
           >
             <Send size={13} />
           </button>
         </div>
 
-        <div className="flex items-center justify-between mt-2 text-[10px] text-slate-500 font-mono px-1">
+        <div className="flex items-center justify-between mt-2 text-[10px] text-[#555555] font-mono px-1">
           <span className="flex items-center gap-1">
-            <Cpu size={10} className="text-blue-400" />
-            <span>9Router :20128 Pool Active</span>
+            <Cpu size={10} className="text-[#777777]" />
+            <span>9Router :20128</span>
           </span>
           <span>Shift+Enter untuk baris baru</span>
         </div>

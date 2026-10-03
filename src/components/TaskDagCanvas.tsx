@@ -262,24 +262,24 @@ export const TaskDagCanvas: React.FC = () => {
     }
   };
 
-  // Node glowing styles according to status
+  // Node card styles according to status (flat, matte dark)
   const getNodeGlowClass = (status: DagNodeStatus, isSelected: boolean) => {
-    const selectionRing = isSelected
-      ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-[#0b0f17] scale-[1.02]"
-      : "hover:scale-[1.01]";
+    const selectionBorder = isSelected
+      ? "ring-1 ring-rig-accent border-rig-accent"
+      : "hover:border-[#383838]";
 
     switch (status) {
       case "completed":
-        return `border-emerald-500/50 bg-gradient-to-b from-emerald-950/30 via-slate-900/90 to-slate-900/95 shadow-[0_0_22px_rgba(16,185,129,0.22)] ${selectionRing}`;
+        return `border-[#2e3b2e] bg-[#181818] ${selectionBorder}`;
       case "in_progress":
-        return `border-blue-500/60 bg-gradient-to-b from-blue-950/30 via-slate-900/90 to-slate-900/95 shadow-[0_0_24px_rgba(59,130,246,0.3)] ${selectionRing}`;
+        return `border-[#1e3448] bg-[#181818] ${selectionBorder}`;
       case "in_review":
-        return `border-amber-500/60 bg-gradient-to-b from-amber-950/35 via-slate-900/90 to-slate-900/95 shadow-[0_0_24px_rgba(245,158,11,0.32)] ${selectionRing}`;
+        return `border-[#3e3422] bg-[#181818] ${selectionBorder}`;
       case "paused":
-        return `border-purple-500/50 bg-gradient-to-b from-purple-950/30 via-slate-900/90 to-slate-900/95 shadow-[0_0_20px_rgba(168,85,247,0.25)] ${selectionRing}`;
+        return `border-[#33253b] bg-[#181818] ${selectionBorder}`;
       case "pending":
       default:
-        return `border-slate-800 bg-slate-900/70 opacity-80 ${selectionRing}`;
+        return `border-[#282828] bg-[#151515] opacity-75 ${selectionBorder}`;
     }
   };
 
@@ -287,35 +287,35 @@ export const TaskDagCanvas: React.FC = () => {
     switch (status) {
       case "completed":
         return (
-          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e2a20] text-[#4ec9b0] border border-[#2e3b2e]">
             <CheckCircle2 size={11} />
             Completed
           </span>
         );
       case "in_progress":
         return (
-          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/40">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-ping inline-block" />
+          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-[#1a2634] text-[#569cd6] border border-[#23384c]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#569cd6] inline-block" />
             In Progress
           </span>
         );
       case "in_review":
         return (
-          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/40">
-            <Sparkles size={11} className="animate-spin text-amber-300" />
+          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-[#2e2619] text-[#ce9178] border border-[#3e3422]">
+            <Sparkles size={11} className="text-[#ce9178]" />
             Reviewing
           </span>
         );
       case "paused":
         return (
-          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/40">
+          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-[#261f2e] text-[#c4b5fd] border border-[#382b45]">
             <Pause size={10} />
             Paused
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e1e1e] text-[#888888] border border-[#282828]">
             <Clock size={10} />
             Standby
           </span>
@@ -326,16 +326,16 @@ export const TaskDagCanvas: React.FC = () => {
   const getModelBadge = (modelBadge: string, family: "anthropic" | "google" | "openai") => {
     let colorStyle = "";
     if (family === "anthropic") {
-      colorStyle = "bg-indigo-950/60 text-indigo-300 border-indigo-500/40";
+      colorStyle = "bg-[#1c1a24] text-[#c4b5fd] border-[#342e48]";
     } else if (family === "google") {
-      colorStyle = "bg-amber-950/60 text-amber-300 border-amber-500/40";
+      colorStyle = "bg-[#251e18] text-[#fcd34d] border-[#443628]";
     } else {
-      colorStyle = "bg-emerald-950/60 text-emerald-300 border-emerald-500/40";
+      colorStyle = "bg-[#16221c] text-[#6ee7b7] border-[#243d32]";
     }
 
     return (
       <span
-        className={`flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border shadow-sm ${colorStyle}`}
+        className={`flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border ${colorStyle}`}
       >
         <Cpu size={10} />
         {modelBadge}
@@ -346,34 +346,34 @@ export const TaskDagCanvas: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full w-full bg-[#080c14] border border-rig-border/80 rounded-xl overflow-hidden relative select-none"
+      className="flex flex-col h-full w-full bg-[#121212] border border-rig-border rounded-lg overflow-hidden relative select-none"
     >
       {/* HUD Toast Bar */}
       {hudMessage && (
         <div
-          className={`absolute top-3 left-1/2 -translate-x-1/2 z-40 px-3.5 py-1.5 rounded-full text-xs font-mono flex items-center gap-2 backdrop-blur-md shadow-2xl transition-all duration-200 border ${
+          className={`absolute top-3 left-1/2 -translate-x-1/2 z-40 px-3.5 py-1.5 rounded text-xs font-mono flex items-center gap-2 border shadow-lg ${
             hudMessage.type === "success"
-              ? "bg-emerald-950/90 text-emerald-200 border-emerald-500/50 shadow-emerald-500/20"
+              ? "bg-[#181818] text-[#4ec9b0] border-[#2e3b2e]"
               : hudMessage.type === "warn"
-              ? "bg-amber-950/90 text-amber-200 border-amber-500/50 shadow-amber-500/20"
-              : "bg-blue-950/90 text-blue-200 border-blue-500/50 shadow-blue-500/20"
+              ? "bg-[#181818] text-[#ce9178] border-[#3e3422]"
+              : "bg-[#181818] text-[#569cd6] border-[#1e3448]"
           }`}
         >
-          <Sparkles size={13} className="text-cyan-400" />
+          <Sparkles size={13} className="text-rig-accent" />
           <span>{hudMessage.text}</span>
         </div>
       )}
 
       {/* DAG Header & Operator Toolbar */}
-      <div className="h-11 px-4 bg-slate-900/80 border-b border-rig-border flex items-center justify-between backdrop-blur-md shrink-0">
+      <div className="h-10 px-4 bg-[#161616] border-b border-rig-border flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="h-6 w-6 rounded-md bg-blue-600/20 border border-blue-500/40 flex items-center justify-center">
-            <Workflow size={14} className="text-blue-400" />
+          <div className="h-6 w-6 rounded bg-[#202020] border border-[#2e2e2e] flex items-center justify-center">
+            <Workflow size={13} className="text-rig-accent" />
           </div>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-[#cccccc] flex items-center gap-2">
               Autonomous Task DAG Flow
-              <span className="text-[10px] font-mono normal-case px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              <span className="text-[10px] font-mono normal-case px-1.5 py-0.5 rounded bg-[#222222] text-[#888888] border border-[#2c2c2c]">
                 Blackboard v1.1
               </span>
             </h3>
@@ -385,20 +385,20 @@ export const TaskDagCanvas: React.FC = () => {
           {/* Pause / Resume Button */}
           <button
             onClick={handleTogglePause}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-all ${
               activeNode?.agent?.status === "paused"
-                ? "bg-emerald-600/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-600 hover:text-white"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-amber-600/20 hover:border-amber-500/40 hover:text-amber-300"
+                ? "bg-[#1e2a20] border-[#2e3b2e] text-[#4ec9b0] hover:bg-[#253528]"
+                : "bg-[#202020] border-[#2e2e2e] text-[#cccccc] hover:bg-[#282828]"
             }`}
             title="Press [Space] to pause or resume agent"
           >
             {activeNode?.agent?.status === "paused" ? (
-              <Play size={12} className="text-emerald-400" />
+              <Play size={12} className="text-[#4ec9b0]" />
             ) : (
-              <Pause size={12} className="text-amber-400" />
+              <Pause size={12} className="text-[#ce9178]" />
             )}
             <span>{activeNode?.agent?.status === "paused" ? "Resume" : "Pause"}</span>
-            <kbd className="text-[9px] bg-slate-900 px-1 py-0.2 rounded border border-slate-700 text-slate-400 font-mono">
+            <kbd className="text-[9px] bg-[#161616] px-1 py-0.2 rounded border border-[#2c2c2c] text-[#777777] font-mono">
               Space
             </kbd>
           </button>
@@ -406,12 +406,12 @@ export const TaskDagCanvas: React.FC = () => {
           {/* Inject Review Prompt Button */}
           <button
             onClick={handleOpenInjectModal}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-[#007acc]/15 border border-[#007acc]/40 text-[#569cd6] hover:bg-[#007acc]/25 transition-all"
             title="Press [Enter] to inject review prompt"
           >
-            <MessageSquarePlus size={12} className="text-blue-400" />
+            <MessageSquarePlus size={12} className="text-rig-accent" />
             <span>Inject Review</span>
-            <kbd className="text-[9px] bg-slate-900 px-1 py-0.2 rounded border border-slate-700 text-slate-400 font-mono flex items-center gap-0.5">
+            <kbd className="text-[9px] bg-[#161616] px-1 py-0.2 rounded border border-[#2c2c2c] text-[#777777] font-mono flex items-center gap-0.5">
               <CornerDownLeft size={9} />
               Enter
             </kbd>
@@ -437,19 +437,8 @@ export const TaskDagCanvas: React.FC = () => {
               markerHeight="6"
               orient="auto-start-reverse"
             >
-              <path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8" />
+              <path d="M 0 1 L 9 5 L 0 9 z" fill="#444444" />
             </marker>
-
-            <linearGradient id="edge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
-              <stop offset="50%" stopColor="#818cf8" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#34d399" stopOpacity="0.8" />
-            </linearGradient>
-
-            <filter id="edge-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
           </defs>
 
           {/* SVG Connection Lines between sequential Nodes */}
@@ -458,15 +447,13 @@ export const TaskDagCanvas: React.FC = () => {
             <path
               d="M 230 135 C 265 135, 275 135, 310 135"
               fill="none"
-              stroke="#38bdf8"
-              strokeWidth="2.5"
-              strokeDasharray="6 4"
-              className="animate-dash"
+              stroke="#383838"
+              strokeWidth="2"
               markerEnd="url(#dag-arrow)"
             />
             {/* Artifact Pill on Edge */}
-            <rect x="245" y="112" width="62" height="18" rx="4" fill="#0f172a" stroke="#334155" />
-            <text x="276" y="124" fill="#94a3b8" fontSize="9" fontFamily="monospace" textAnchor="middle">
+            <rect x="245" y="112" width="62" height="18" rx="3" fill="#181818" stroke="#282828" />
+            <text x="276" y="124" fill="#888888" fontSize="9" fontFamily="monospace" textAnchor="middle">
               spec.json
             </text>
           </g>
@@ -476,14 +463,12 @@ export const TaskDagCanvas: React.FC = () => {
             <path
               d="M 540 135 C 575 135, 585 135, 620 135"
               fill="none"
-              stroke="#818cf8"
-              strokeWidth="2.5"
-              strokeDasharray="6 4"
-              className="animate-dash"
+              stroke="#383838"
+              strokeWidth="2"
               markerEnd="url(#dag-arrow)"
             />
-            <rect x="555" y="112" width="64" height="18" rx="4" fill="#0f172a" stroke="#334155" />
-            <text x="587" y="124" fill="#94a3b8" fontSize="9" fontFamily="monospace" textAnchor="middle">
+            <rect x="555" y="112" width="64" height="18" rx="3" fill="#181818" stroke="#282828" />
+            <text x="587" y="124" fill="#888888" fontSize="9" fontFamily="monospace" textAnchor="middle">
               git diff
             </text>
           </g>
@@ -493,14 +478,12 @@ export const TaskDagCanvas: React.FC = () => {
             <path
               d="M 850 135 C 885 135, 895 135, 930 135"
               fill="none"
-              stroke="#34d399"
-              strokeWidth="2.5"
-              strokeDasharray="6 4"
-              className="animate-dash"
+              stroke="#383838"
+              strokeWidth="2"
               markerEnd="url(#dag-arrow)"
             />
-            <rect x="865" y="112" width="68" height="18" rx="4" fill="#0f172a" stroke="#334155" />
-            <text x="899" y="124" fill="#94a3b8" fontSize="9" fontFamily="monospace" textAnchor="middle">
+            <rect x="865" y="112" width="68" height="18" rx="3" fill="#181818" stroke="#282828" />
+            <text x="899" y="124" fill="#888888" fontSize="9" fontFamily="monospace" textAnchor="middle">
               test-pass
             </text>
           </g>
@@ -516,16 +499,16 @@ export const TaskDagCanvas: React.FC = () => {
               <div
                 key={node.id}
                 onClick={() => handleSelectNode(node.id)}
-                className={`w-64 rounded-xl border p-3.5 transition-all duration-200 cursor-pointer flex flex-col justify-between relative backdrop-blur-md ${glowClass}`}
+                className={`w-64 rounded-lg border p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between relative ${glowClass}`}
               >
                 {/* Node Top: Role Icon, Title & Model Badge */}
                 <div>
                   <div className="flex items-center justify-between gap-1 mb-2">
                     <div className="flex items-center gap-1.5">
-                      <div className="p-1 rounded bg-slate-800/80 border border-slate-700/50">
+                      <div className="p-1 rounded bg-[#202020] border border-[#2e2e2e]">
                         {getRoleIcon(node.role)}
                       </div>
-                      <span className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">
+                      <span className="text-[11px] font-semibold text-[#cccccc] tracking-wide uppercase">
                         {node.agent?.name || node.role}
                       </span>
                     </div>
@@ -534,16 +517,16 @@ export const TaskDagCanvas: React.FC = () => {
                     {getModelBadge(node.modelBadge, node.modelFamily)}
                   </div>
 
-                  <h4 className="text-xs font-bold text-slate-100 line-clamp-1 group-hover:text-blue-400">
+                  <h4 className="text-xs font-semibold text-[#f3f3f3] line-clamp-1 group-hover:text-rig-accent">
                     {node.title}
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-[#888888] mt-1 line-clamp-2 leading-relaxed">
                     {node.subtitle}
                   </p>
                 </div>
 
                 {/* Node Bottom: Status Pill, Branch/Artifact & Focus Button */}
-                <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="mt-3.5 pt-2.5 border-t border-[#282828] flex items-center justify-between">
                   {getStatusBadge(node.status)}
 
                   {node.task?.branchName ? (
@@ -552,14 +535,14 @@ export const TaskDagCanvas: React.FC = () => {
                         e.stopPropagation();
                         if (node.task) setSelectedDiffTask(node.task);
                       }}
-                      className="text-[10px] font-mono text-slate-400 hover:text-blue-400 flex items-center gap-1 bg-slate-800/50 px-1.5 py-0.5 rounded border border-slate-700/40 transition-colors"
+                      className="text-[10px] font-mono text-[#888888] hover:text-[#569cd6] flex items-center gap-1 bg-[#202020] px-1.5 py-0.5 rounded border border-[#2e2e2e] transition-colors"
                       title="Inspect Git Diff"
                     >
-                      <GitBranch size={10} className="text-blue-400" />
+                      <GitBranch size={10} className="text-rig-accent" />
                       <span>{node.task.branchName.split("/").pop()}</span>
                     </button>
                   ) : (
-                    <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1">
+                    <span className="text-[10px] font-mono text-[#666666] flex items-center gap-1">
                       <FileCode2 size={10} />
                       {node.artifactOutput}
                     </span>
@@ -568,7 +551,7 @@ export const TaskDagCanvas: React.FC = () => {
 
                 {/* Selected Indicator Pill */}
                 {isSelected && (
-                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-cyan-500 text-slate-950 font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-md shadow-cyan-500/30">
+                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-rig-accent text-white font-medium text-[9px] px-2 py-0.5 rounded uppercase tracking-wider">
                     Focused Agent
                   </div>
                 )}
@@ -579,41 +562,41 @@ export const TaskDagCanvas: React.FC = () => {
       </div>
 
       {/* Bottom Mission Control Footer & Shortcut Hint Legend */}
-      <div className="h-9 px-4 bg-slate-950/80 border-t border-rig-border flex items-center justify-between text-[11px] text-slate-400 font-mono">
+      <div className="h-9 px-4 bg-[#161616] border-t border-rig-border flex items-center justify-between text-[11px] text-[#888888] font-mono">
         <div className="flex items-center gap-3">
-          <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="text-[#cccccc] font-medium flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[#4ec9b0]" />
             Active Agent:{" "}
-            <span className="text-cyan-400">{activeNode?.agent?.name || "None"}</span>
+            <span className="text-[#569cd6]">{activeNode?.agent?.name || "None"}</span>
           </span>
-          <span className="text-slate-600">|</span>
+          <span className="text-[#444444]">|</span>
           <span className="hidden sm:inline">
-            Status: <span className="text-slate-300 uppercase">{activeNode?.status}</span>
+            Status: <span className="text-[#cccccc] uppercase">{activeNode?.status}</span>
           </span>
         </div>
 
         {/* Keyboard Legend */}
-        <div className="flex items-center gap-3 text-[10px] text-slate-400">
+        <div className="flex items-center gap-3 text-[10px] text-[#888888]">
           <span className="flex items-center gap-1">
-            <kbd className="bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+            <kbd className="bg-[#202020] border border-[#2e2e2e] px-1.5 py-0.5 rounded text-[#cccccc]">
               Click
             </kbd>
             <span>Focus PTY</span>
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+            <kbd className="bg-[#202020] border border-[#2e2e2e] px-1.5 py-0.5 rounded text-[#cccccc]">
               Space
             </kbd>
             <span>Pause/Resume</span>
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+            <kbd className="bg-[#202020] border border-[#2e2e2e] px-1.5 py-0.5 rounded text-[#cccccc]">
               Enter
             </kbd>
             <span>Inject Prompt</span>
           </span>
           <span className="flex items-center gap-1 hidden md:flex">
-            <kbd className="bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+            <kbd className="bg-[#202020] border border-[#2e2e2e] px-1.5 py-0.5 rounded text-[#cccccc]">
               ← / →
             </kbd>
             <span>Navigate DAG</span>
@@ -623,39 +606,39 @@ export const TaskDagCanvas: React.FC = () => {
 
       {/* Modal: Inject Review Prompt */}
       {showInjectModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[#0e1420] border border-blue-500/40 rounded-2xl p-5 shadow-2xl shadow-blue-500/10 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-[#181818] border border-[#282828] rounded-xl p-5 shadow-2xl space-y-4">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <MessageSquarePlus size={16} className="text-blue-400" />
-                  <h3 className="text-sm font-bold text-slate-100">
+                  <MessageSquarePlus size={16} className="text-rig-accent" />
+                  <h3 className="text-sm font-semibold text-[#f3f3f3]">
                     Inject Review Prompt to {activeNode?.agent?.name}
                   </h3>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[#888888] mt-1">
                   Intervene directly into this agent&apos;s active turn via the 9Router & Blackboard.
                 </p>
               </div>
               <button
                 onClick={() => setShowInjectModal(false)}
-                className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                className="text-[#888888] hover:text-[#f3f3f3] p-1 rounded hover:bg-[#252525] transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Target Agent Context Info */}
-            <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">
-                Model: <span className="text-blue-400">{activeNode?.agent?.model}</span>
+            <div className="p-2.5 rounded bg-[#202020] border border-[#2e2e2e] flex items-center justify-between text-xs font-mono">
+              <span className="text-[#888888]">
+                Model: <span className="text-[#569cd6]">{activeNode?.agent?.model}</span>
               </span>
-              <span className="text-slate-400">
-                Role: <span className="text-indigo-400 uppercase">{activeNode?.role}</span>
+              <span className="text-[#888888]">
+                Role: <span className="text-[#c4b5fd] uppercase">{activeNode?.role}</span>
               </span>
-              <span className="text-slate-400">
+              <span className="text-[#888888]">
                 Worktree:{" "}
-                <span className="text-amber-400">
+                <span className="text-[#fcd34d]">
                   {activeNode?.agent?.worktreePath?.split("/").pop() || "main"}
                 </span>
               </span>
@@ -664,7 +647,7 @@ export const TaskDagCanvas: React.FC = () => {
             {/* Input Form */}
             <form onSubmit={handleSendPrompt} className="space-y-3">
               <div>
-                <label className="text-[11px] font-medium text-slate-300 block mb-1">
+                <label className="text-[11px] font-medium text-[#cccccc] block mb-1">
                   Instruction / Code Review Feedback
                 </label>
                 <div className="relative">
@@ -674,13 +657,13 @@ export const TaskDagCanvas: React.FC = () => {
                     value={promptInput}
                     onChange={(e) => setPromptInput(e.target.value)}
                     placeholder="e.g. Verify token expiry claims and sanitize payload before decoding..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-3 pr-10 py-2.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-[#121212] border border-[#333333] rounded pl-3 pr-10 py-2 text-xs text-[#f3f3f3] placeholder:text-[#666666] focus:outline-none focus:border-rig-accent"
                     autoFocus
                   />
                   <button
                     type="submit"
                     disabled={!promptInput.trim()}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white transition-all"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded bg-rig-accent hover:bg-rig-accentHover disabled:opacity-40 text-white transition-all"
                   >
                     <Send size={13} />
                   </button>
@@ -689,7 +672,7 @@ export const TaskDagCanvas: React.FC = () => {
 
               {/* Quick Preset Prompts */}
               <div>
-                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block mb-1.5">
+                <span className="text-[10px] font-mono text-[#777777] uppercase tracking-wider block mb-1.5">
                   Quick Review Presets:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -698,7 +681,7 @@ export const TaskDagCanvas: React.FC = () => {
                       key={preset}
                       type="button"
                       onClick={() => setPromptInput(preset)}
-                      className="text-[10px] bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 px-2 py-1 rounded transition-colors text-left"
+                      className="text-[10px] bg-[#202020] hover:bg-[#282828] text-[#cccccc] border border-[#2e2e2e] hover:border-[#383838] px-2 py-1 rounded transition-colors text-left"
                     >
                       + {preset}
                     </button>
@@ -707,18 +690,18 @@ export const TaskDagCanvas: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#282828]">
                 <button
                   type="button"
                   onClick={() => setShowInjectModal(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 transition-colors"
+                  className="px-3 py-1.5 rounded text-xs font-medium text-[#888888] hover:bg-[#252525] border border-[#2e2e2e] transition-colors"
                 >
                   Cancel (Esc)
                 </button>
                 <button
                   type="submit"
                   disabled={!promptInput.trim()}
-                  className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white flex items-center gap-1.5 shadow-lg shadow-blue-500/20 transition-all"
+                  className="px-4 py-1.5 rounded text-xs font-medium bg-rig-accent hover:bg-rig-accentHover disabled:opacity-40 text-white flex items-center gap-1.5 transition-all"
                 >
                   <Send size={12} />
                   <span>Dispatch & Continue Turn</span>

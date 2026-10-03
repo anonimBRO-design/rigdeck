@@ -8,11 +8,11 @@ import {
 } from "../services/sharedMemory";
 
 const AGENT_STYLE: Record<string, string> = {
-  conductor: "text-indigo-300 bg-indigo-500/10 border-indigo-500/30",
-  claude: "text-amber-300 bg-amber-500/10 border-amber-500/30",
-  antigravity: "text-cyan-300 bg-cyan-500/10 border-cyan-500/30",
-  chatgpt: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30",
-  user: "text-blue-300 bg-blue-500/10 border-blue-500/30",
+  conductor: "text-[#007acc] bg-[#182330] border-[#203042]",
+  claude: "text-[#d97706] bg-[#221c14] border-[#33261a]",
+  antigravity: "text-[#007acc] bg-[#182330] border-[#203042]",
+  chatgpt: "text-[#10b981] bg-[#16241c] border-[#1f3427]",
+  user: "text-[#cccccc] bg-[#222222] border-[#303030]",
 };
 
 interface ParsedEntry {
@@ -41,20 +41,19 @@ export const SharedMemoryFeed: React.FC = () => {
 
   useEffect(() => {
     refresh();
-    // Polling ringan: AI lain (Claude/Antigravity/ChatGPT) menulis file langsung ke disk.
     const id = setInterval(refresh, 4000);
     return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="shrink-0 border-t border-rig-border bg-slate-950/80 px-5 py-3 max-h-56 flex flex-col">
-      <div className="flex items-center justify-between mb-2">
+    <div className="shrink-0 border-t border-[#242424] bg-[#161616] px-4 py-2.5 max-h-48 flex flex-col">
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
-          <Brain size={14} className="text-purple-400" />
-          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-200">
+          <Brain size={13} className="text-[#888888]" />
+          <h3 className="text-[11px] font-semibold tracking-wide text-white">
             Shared Memory Feed
           </h3>
-          <span className="text-[10px] font-mono text-slate-500">
+          <span className="text-[10px] font-mono text-[#666666]">
             {status ? status.journal_today : "rig-memory/ belum aktif"}
           </span>
         </div>
@@ -62,17 +61,17 @@ export const SharedMemoryFeed: React.FC = () => {
           <button
             onClick={refresh}
             title="Refresh"
-            className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+            className="p-1 rounded text-[#777777] hover:text-[#cccccc] hover:bg-[#202020]"
           >
-            <RefreshCw size={12} />
+            <RefreshCw size={11} />
           </button>
           {status && (
             <button
               onClick={() => openVaultInObsidian(status.vault_path).catch(console.warn)}
               title="Buka vault di Obsidian"
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold text-purple-200 bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium text-[#cccccc] bg-[#222222] border border-[#303030] hover:bg-[#282828] transition-colors"
             >
-              <ExternalLink size={11} />
+              <ExternalLink size={10} />
               Obsidian
             </button>
           )}
@@ -81,25 +80,24 @@ export const SharedMemoryFeed: React.FC = () => {
 
       <div className="overflow-y-auto space-y-1 pr-1">
         {entries.length === 0 ? (
-          <p className="text-[11px] text-slate-500 font-mono">
-            Belum ada entri hari ini. Kirim misi ke Master Conductor, atau minta Claude / Antigravity /
-            ChatGPT menulis ke rig-memory/journal/.
+          <p className="text-[11px] text-[#666666] font-mono">
+            Belum ada entri hari ini. Kirim misi ke Master Conductor untuk mencatat progres.
           </p>
         ) : (
           entries.map((line, i) => {
             const e = parseEntry(line);
             return (
               <div key={i} className="flex items-start gap-2 text-[11px] leading-relaxed">
-                <span className="font-mono text-slate-500 shrink-0 w-10">{e.time}</span>
+                <span className="font-mono text-[#555555] shrink-0 w-10">{e.time}</span>
                 <span
-                  className={`font-mono px-1.5 rounded border shrink-0 ${
-                    AGENT_STYLE[e.agent] || "text-slate-300 bg-slate-800 border-slate-700"
+                  className={`font-mono text-[10px] px-1 rounded border shrink-0 ${
+                    AGENT_STYLE[e.agent] || "text-[#888888] bg-[#202020] border-[#2c2c2c]"
                   }`}
                 >
                   {e.agent}
                 </span>
-                {e.kind && <span className="font-mono text-slate-500 shrink-0">{e.kind}</span>}
-                <span className="text-slate-300 break-words min-w-0">{e.body}</span>
+                {e.kind && <span className="font-mono text-[#666666] shrink-0">{e.kind}</span>}
+                <span className="text-[#bbbbbb] break-words min-w-0">{e.body}</span>
               </div>
             );
           })

@@ -6,7 +6,6 @@ import {
   Layers,
   Columns,
   Grid,
-  ShieldCheck,
   Zap,
 } from "lucide-react";
 
@@ -24,7 +23,6 @@ export const Header: React.FC = () => {
     latency_ms: 0,
   });
 
-  // Poll REAL 9Router status from Rust backend every 4 seconds
   useEffect(() => {
     let isMounted = true;
 
@@ -48,83 +46,74 @@ export const Header: React.FC = () => {
   }, []);
 
   const layoutButtons: { mode: LayoutMode; icon: React.ReactNode; label: string }[] = [
-    { mode: "focus", icon: <Layers size={14} />, label: "Focus (1)" },
-    { mode: "split", icon: <Columns size={14} />, label: "Split (2)" },
-    { mode: "matrix", icon: <Grid size={14} />, label: "Matrix (4)" },
+    { mode: "focus", icon: <Layers size={13} />, label: "Focus (1)" },
+    { mode: "split", icon: <Columns size={13} />, label: "Split (2)" },
+    { mode: "matrix", icon: <Grid size={13} />, label: "Matrix (4)" },
   ];
 
   return (
-    <header className="h-12 border-b border-rig-border bg-rig-panel/90 px-4 flex items-center justify-between backdrop-blur-md">
+    <header className="h-11 border-b border-[#262626] bg-[#161616] px-4 flex items-center justify-between">
       {/* Brand & Project Info */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-xs shadow-lg shadow-blue-500/20">
+          <div className="h-6 w-6 rounded bg-[#222222] border border-[#333333] flex items-center justify-center font-bold text-xs text-[#007acc]">
             RD
           </div>
-          <div>
-            <span className="font-bold tracking-tight text-slate-100 text-sm">RigDeck</span>
-            <span className="text-[10px] text-blue-400 font-mono ml-2 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
-              v1.1-LIVE
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white text-xs tracking-tight">RigDeck</span>
+            <span className="text-[10px] text-[#888888] font-mono px-1.5 py-0.2 rounded bg-[#1f1f1f] border border-[#2e2e2e]">
+              v1.1
             </span>
           </div>
         </div>
 
-        <div className="h-4 w-[1px] bg-rig-border mx-1" />
+        <div className="h-3.5 w-[1px] bg-[#2a2a2a] mx-1" />
 
         {/* Real-time 9Router Telemetry Pill */}
-        <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 rounded-full px-2.5 py-1 text-xs">
+        <div className="flex items-center gap-2 bg-[#1a1a1a] border border-[#282828] rounded-md px-2.5 py-0.5 text-xs">
           <div
-            className={`h-2 w-2 rounded-full ${
-              routerHealth.online
-                ? "bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50"
-                : "bg-red-400"
+            className={`h-1.5 w-1.5 rounded-full ${
+              routerHealth.online ? "bg-[#10b981]" : "bg-[#ef4444]"
             }`}
           />
-          <span className="text-slate-300 font-mono text-[11px]">9Router :20128</span>
-          <span className="text-slate-500 font-mono text-[11px]">•</span>
+          <span className="text-[#a0a0a0] font-mono text-[11px]">9Router :20128</span>
+          <span className="text-[#444444] font-mono text-[11px]">•</span>
           <span
             className={`font-mono text-[11px] ${
-              routerHealth.online ? "text-emerald-400" : "text-red-400"
+              routerHealth.online ? "text-[#10b981]" : "text-[#ef4444]"
             }`}
           >
             {routerHealth.online ? `${routerHealth.latency_ms}ms` : "Offline"}
           </span>
-          <span className="text-slate-500 font-mono text-[11px]">•</span>
-          <span className="text-slate-400 font-mono text-[11px] flex items-center gap-1">
-            <Zap size={11} className="text-amber-400" />
-            {routerHealth.active_models_count} models loaded
+          <span className="text-[#444444] font-mono text-[11px]">•</span>
+          <span className="text-[#888888] font-mono text-[11px] flex items-center gap-1">
+            <Zap size={10} className="text-[#a0a0a0]" />
+            {routerHealth.active_models_count} models
           </span>
         </div>
       </div>
 
-      {/* Right Controls: Layout Switcher & MCP Status */}
-      <div className="flex items-center gap-3">
-        {/* Layout Switcher */}
-        <div className="flex items-center bg-slate-900/80 p-0.5 rounded-lg border border-slate-800">
+      {/* Right Controls: Layout Switcher */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center bg-[#1a1a1a] p-0.5 rounded-md border border-[#282828]">
           {layoutButtons.map((btn) => (
             <button
               key={btn.mode}
               onClick={() => setLayoutMode(btn.mode)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                 layoutMode === btn.mode
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                  ? "bg-[#282828] text-white border border-[#383838]"
+                  : "text-[#888888] hover:text-[#cccccc] hover:bg-[#202020]"
               }`}
             >
               {btn.icon}
-              <span className="hidden sm:inline">{btn.label}</span>
+              <span className="hidden sm:inline text-[11px]">{btn.label}</span>
             </button>
           ))}
-        </div>
-
-        <div className="h-4 w-[1px] bg-rig-border" />
-
-        {/* Universal MCP Hub Status */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-900/60 border border-slate-800 px-2.5 py-1 rounded-lg">
-          <ShieldCheck size={14} className="text-blue-400" />
-          <span className="font-mono text-[11px]">MCP Hub (Active)</span>
         </div>
       </div>
     </header>
   );
 };
+
+export default Header;

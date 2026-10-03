@@ -129,18 +129,18 @@ export const TaskBoard: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-rig-panel/60 border-r border-rig-border w-80 shrink-0">
+    <div className="flex flex-col h-full bg-[#141414] border-r border-[#282828] w-80 shrink-0">
       {/* Board Header */}
-      <div className="p-3 border-b border-rig-border flex items-center justify-between">
+      <div className="p-3 bg-[#161616] border-b border-[#282828] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <GitBranch size={15} className="text-blue-400" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+          <GitBranch size={15} className="text-rig-accent" />
+          <h2 className="text-xs font-medium uppercase tracking-wider text-[#cccccc]">
             Blackboard (SQLite WAL)
           </h2>
         </div>
         <button
           onClick={() => setShowNewModal(true)}
-          className="p-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all text-xs flex items-center gap-1 px-2 border border-blue-500/30"
+          className="p-1 rounded bg-[#202020] text-[#cccccc] hover:bg-[#282828] transition-colors text-xs flex items-center gap-1 px-2 border border-[#2e2e2e]"
         >
           <Plus size={13} />
           <span>New Task</span>
@@ -153,12 +153,12 @@ export const TaskBoard: React.FC = () => {
           const colTasks = dbTasks.filter((t) => t.status === col.status);
           return (
             <div key={col.status} className="space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-1">
+              <div className="flex items-center justify-between text-[11px] font-medium text-[#888888] uppercase tracking-wider px-1">
                 <span className={`flex items-center gap-1.5 ${col.color}`}>
                   {col.icon}
                   {col.label}
                 </span>
-                <span className="bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
+                <span className="bg-[#202020] text-[#cccccc] px-1.5 py-0.2 rounded text-[10px] font-mono border border-[#2e2e2e]">
                   {colTasks.length}
                 </span>
               </div>
@@ -167,31 +167,31 @@ export const TaskBoard: React.FC = () => {
                 {colTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition-all cursor-pointer group shadow-sm"
+                    className="p-2.5 rounded bg-[#181818] border border-[#282828] hover:border-[#383838] transition-colors cursor-pointer group"
                     onClick={() => task.diffSummary && setSelectedDiffTask(task)}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-medium text-slate-200 group-hover:text-blue-400 transition-colors line-clamp-1">
+                      <h4 className="text-xs font-medium text-[#f3f3f3] group-hover:text-rig-accent transition-colors line-clamp-1">
                         {task.title}
                       </h4>
-                      <span className="text-[10px] font-mono text-slate-500 shrink-0">
+                      <span className="text-[10px] font-mono text-[#666666] shrink-0">
                         {task.id.slice(0, 10)}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                    <p className="text-[11px] text-[#888888] mt-1 line-clamp-2">
                       {task.description}
                     </p>
 
                     {task.branchName && (
-                      <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-mono text-slate-400">
-                        <span className="flex items-center gap-1 text-slate-400 truncate max-w-[140px]">
-                          <GitBranch size={11} className="text-slate-500 shrink-0" />
+                      <div className="mt-2.5 pt-2 border-t border-[#242424] flex items-center justify-between text-[10px] font-mono text-[#888888]">
+                        <span className="flex items-center gap-1 text-[#888888] truncate max-w-[140px]">
+                          <GitBranch size={11} className="text-[#666666] shrink-0" />
                           {task.branchName}
                         </span>
 
                         {task.diffSummary && (
-                          <span className="text-emerald-400 flex items-center gap-1">
+                          <span className="text-[#4ec9b0] flex items-center gap-1">
                             <FileCode2 size={11} />
                             +{task.diffSummary.insertions} -{task.diffSummary.deletions}
                           </span>
@@ -208,17 +208,17 @@ export const TaskBoard: React.FC = () => {
 
       {/* New Task Modal */}
       {showNewModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
           <form
             onSubmit={handleCreate}
-            className="w-full max-w-md bg-rig-panel border border-rig-border rounded-xl p-5 space-y-4 shadow-2xl"
+            className="w-full max-w-md bg-[#181818] border border-[#282828] rounded-xl p-5 space-y-4 shadow-2xl"
           >
-            <h3 className="text-sm font-semibold text-slate-200">
+            <h3 className="text-sm font-semibold text-[#f3f3f3]">
               Create New Task in SQLite Blackboard
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-medium text-slate-400 block mb-1">
+                <label className="text-[11px] font-medium text-[#888888] block mb-1">
                   Task Title
                 </label>
                 <input
@@ -226,12 +226,12 @@ export const TaskBoard: React.FC = () => {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Implement OAuth2 refresh token rotation"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#121212] border border-[#333333] rounded px-3 py-1.5 text-xs text-[#f3f3f3] focus:outline-none focus:border-rig-accent"
                   required
                 />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-slate-400 block mb-1">
+                <label className="text-[11px] font-medium text-[#888888] block mb-1">
                   Specification & Acceptance Criteria
                 </label>
                 <textarea
@@ -239,22 +239,22 @@ export const TaskBoard: React.FC = () => {
                   onChange={(e) => setDesc(e.target.value)}
                   placeholder="Detail instruction, expected unit tests, and security boundary..."
                   rows={3}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full bg-[#121212] border border-[#333333] rounded p-2.5 text-xs text-[#f3f3f3] focus:outline-none focus:border-rig-accent resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#242424]">
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800"
+                className="px-3 py-1.5 rounded text-xs font-medium text-[#888888] hover:bg-[#252525] border border-[#2e2e2e]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/20"
+                className="px-3.5 py-1.5 rounded text-xs font-medium bg-rig-accent hover:bg-rig-accentHover text-white"
               >
                 Save to SQLite & Dispatch
               </button>

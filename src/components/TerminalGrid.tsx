@@ -35,18 +35,18 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
     const term = new Terminal({
       cursorBlink: true,
       theme: {
-        background: "#0c1017",
-        foreground: "#cbd5e1",
-        cursor: "#38bdf8",
-        selectionBackground: "#1e293b",
-        black: "#0f172a",
+        background: "#121212",
+        foreground: "#cccccc",
+        cursor: "#007acc",
+        selectionBackground: "#264f78",
+        black: "#1e1e1e",
         red: "#f87171",
-        green: "#4ade80",
-        yellow: "#facc15",
-        blue: "#60a5fa",
-        magenta: "#c084fc",
-        cyan: "#38bdf8",
-        white: "#f8fafc",
+        green: "#4ec9b0",
+        yellow: "#dcdcaa",
+        blue: "#569cd6",
+        magenta: "#c586c0",
+        cyan: "#4fc1ff",
+        white: "#f3f3f3",
       },
       fontFamily: 'JetBrains Mono, Menlo, Monaco, "Courier New", monospace',
       fontSize: 12,
@@ -150,18 +150,18 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
 
   const statusColor =
     agent.status === "running"
-      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+      ? "text-[#4ec9b0] bg-[#1e2a20] border-[#2e3b2e]"
       : agent.status === "waiting_approval"
-      ? "text-amber-400 bg-amber-500/10 border-amber-500/30 animate-pulse"
-      : "text-slate-400 bg-slate-800 border-slate-700";
+      ? "text-[#ce9178] bg-[#251e18] border-[#3e3422]"
+      : "text-[#888888] bg-[#202020] border-[#2e2e2e]";
 
   return (
-    <div className="flex flex-col h-full bg-[#0c1017] rounded-xl border border-rig-border overflow-hidden shadow-xl">
+    <div className="flex flex-col h-full bg-[#121212] rounded-lg border border-[#282828] overflow-hidden">
       {/* Terminal Title Bar */}
-      <div className="h-9 bg-slate-900/90 px-3 flex items-center justify-between border-b border-rig-border">
+      <div className="h-8 bg-[#181818] px-3 flex items-center justify-between border-b border-[#282828]">
         <div className="flex items-center gap-2">
-          <TermIcon size={14} className="text-blue-400" />
-          <span className="text-xs font-semibold text-slate-200">{agent.name}</span>
+          <TermIcon size={14} className="text-rig-accent" />
+          <span className="text-xs font-medium text-[#f3f3f3]">{agent.name}</span>
           <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${statusColor}`}>
             {agent.status}
           </span>
@@ -169,8 +169,8 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
 
         <div className="flex items-center gap-2">
           {agent.worktreePath && (
-            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700/50">
-              <FolderGit2 size={11} className="text-amber-400" />
+            <span className="text-[10px] font-mono text-[#888888] flex items-center gap-1 bg-[#202020] px-2 py-0.5 rounded border border-[#2e2e2e]">
+              <FolderGit2 size={11} className="text-[#ce9178]" />
               {agent.worktreePath.split("/").pop()}
             </span>
           )}
@@ -179,20 +179,20 @@ const AgentTerminalCard: React.FC<AgentTerminalCardProps> = ({ agent }) => {
             <button
               onClick={handleRestartPty}
               title="Restart PTY"
-              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-1 rounded hover:bg-[#252525] text-[#888888] hover:text-[#cccccc] transition-colors"
             >
               <RotateCcw size={12} />
             </button>
             <button
               title="Pause Agent"
-              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-1 rounded hover:bg-[#252525] text-[#888888] hover:text-[#cccccc] transition-colors"
             >
               <Pause size={12} />
             </button>
             <button
               title="Kill Process"
               onClick={() => invoke("kill_pty", { agentId: agent.id })}
-              className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+              className="p-1 rounded hover:bg-[#3a1a1a] text-[#888888] hover:text-[#f87171] transition-colors"
             >
               <AlertTriangle size={12} />
             </button>
