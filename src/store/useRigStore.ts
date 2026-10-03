@@ -18,6 +18,8 @@ interface RigStore {
   rejectHitlAction: (id: string) => void;
   approveMergeTask: (taskId: string) => void;
   addTask: (title: string, description: string) => void;
+  togglePauseAgent: (agentId: string) => void;
+  injectReviewPrompt: (agentId: string, prompt: string) => void;
 }
 
 export const useRigStore = create<RigStore>((set) => ({
@@ -136,5 +138,27 @@ export const useRigStore = create<RigStore>((set) => ({
           status: "backlog",
         },
       ],
+    })),
+
+  togglePauseAgent: (agentId) =>
+    set((state) => ({
+      agents: state.agents.map((a) => {
+        if (a.id !== agentId) return a;
+        const nextStatus = a.status === "paused" ? "running" : "paused";
+        return { ...a, status: nextStatus };
+      }),
+    })),
+
+  injectReviewPrompt: (agentId, prompt) =>
+    set((state) => ({
+      agents: state.agents.map((a) =>
+        a.id === agentId
+          ? {
+              ...a,
+              status: "running",
+              currentTaskTitle: "[Review Injected]: " + prompt,
+            }
+          : a
+      ),
     })),
 }));

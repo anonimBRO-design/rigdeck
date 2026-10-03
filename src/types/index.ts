@@ -1,6 +1,6 @@
 export type AgentRole = "architect" | "coder" | "tester" | "reviewer";
 
-export type AgentStatus = "idle" | "running" | "waiting_approval" | "error" | "completed";
+export type AgentStatus = "idle" | "running" | "waiting_approval" | "error" | "completed" | "paused";
 
 export interface Agent {
   id: string;
@@ -46,4 +46,22 @@ export interface RouterTelemetry {
   latencyMs: number;
   tokensProcessed: number;
   endpoint: string;
+}
+
+
+export type DagNodeStatus = "completed" | "in_progress" | "in_review" | "paused" | "pending";
+
+export interface DagNodeData {
+  id: string;
+  title: string;
+  subtitle: string;
+  role: AgentRole;
+  agentId: string;
+  agentName: string;
+  model: string;
+  modelBadge: string;
+  status: DagNodeStatus;
+  branchName?: string;
+  dependencies: string[];
+  tokensUsed?: number;
 }
