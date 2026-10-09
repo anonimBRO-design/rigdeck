@@ -62,8 +62,63 @@ impl PtyState {
             .openpty(size)
             .map_err(|e| format!("Failed to open PTY pair: {}", e))?;
 
-        let mut cmd_builder = CommandBuilder::new(&cmd);
-        cmd_builder.args(args);
+        #[cfg(target_os = "windows")]
+        let (shell_cmd, shell_args) = {
+            if cmd == "bash" || cmd.is_empty() {
+                // Hindari C:\Windows\System32\bash.exe karena itu launcher WSL yang error jika belum ada distro.
+                // Cari Git Bash nyata terlebih dahulu:
+                let git_bash_candidates = [
+                    "D:\\Git\\bin\\bash.exe",
+                    "C:\\Program Files\\Git\\bin\\bash.exe",
+                    "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+                ];
+                let mut found_bash = None;
+                for path in &git_bash_candidates {
+                    if std::path::Path::new(path).exists() {
+                        found_bash = Some(path.to_string());
+                        break;
+                    }
+                }
+
+                // Cek lokasi git.exe jika belum ketemu di lokasi standar
+                if found_bash.is_none() {
+                    if let Ok(out) = std::process::Command::new("where").arg("git.exe").output() {
+                        if out.status.success() {
+                            if let Ok(paths) = String::from_utf8(out.stdout) {
+                                for line in paths.lines() {
+                                    let p = std::path::Path::new(line.trim());
+                                    if let Some(parent) = p.parent() {
+                                        let candidate = parent.parent().unwrap_or(parent).join("bin").join("bash.exe");
+                                        if candidate.exists() {
+                                            found_bash = Some(candidate.to_string_lossy().to_string());
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(bash_path) = found_bash {
+                    let mut b_args = args;
+                    if b_args.is_empty() {
+                        b_args.push("-i".to_string());
+                    }
+                    (bash_path, b_args)
+                } else {
+                    ("powershell.exe".to_string(), vec!["-NoLogo".to_string()])
+                }
+            } else {
+                (cmd, args)
+            }
+        };
+
+        #[cfg(not(target_os = "windows"))]
+        let (shell_cmd, shell_args) = (cmd, args);
+
+        let mut cmd_builder = CommandBuilder::new(&shell_cmd);
+        cmd_builder.args(shell_args);
 
         if let Some(ref dir) = cwd {
             cmd_builder.cwd(dir);
@@ -76,7 +131,7 @@ impl PtyState {
         let child = pair
             .slave
             .spawn_command(cmd_builder)
-            .map_err(|e| format!("Failed to spawn command '{}': {}", cmd, e))?;
+            .map_err(|e| format!("Failed to spawn command '{}': {}", shell_cmd, e))?;
 
         // Drop slave so reader gets EOF when child terminates
         drop(pair.slave);

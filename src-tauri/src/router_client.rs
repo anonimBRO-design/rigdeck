@@ -41,7 +41,7 @@ pub async fn check_router_health(base_url: &str) -> RouterHealth {
 async fn reqwest_lite_ping(base_url: &str) -> Result<usize, String> {
     let url = format!("{}/models", base_url.trim_end_matches('/'));
     let output = std::process::Command::new("curl")
-        .args(["-s", "-m", "2", &url])
+        .args(["-s", "-m", "8", &url])
         .output()
         .map_err(|e| e.to_string())?;
 

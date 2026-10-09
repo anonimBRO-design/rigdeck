@@ -15,6 +15,7 @@ Memori bersama untuk **4 AI** yang bekerja di proyek ini:
 ## Catatan inti
 - [[01-Project-Context]] — apa yang sedang dibangun
 - [[02-Decisions]] — keputusan arsitektur (append-only)
+- [[03-PRD-Phase2]] — Product Requirements Document (Phase 2 Next-Gen)
 - [[03-Agent-Roles]] — siapa mengerjakan apa
 - [[04-Conventions]] — aturan kode & protokol memori
 

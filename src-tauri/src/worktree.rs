@@ -107,6 +107,77 @@ impl WorktreeManager {
 
         Ok(())
     }
+
+    /// Safely merges the worktree branch into base (default "main"),
+    /// creates a merge commit, and removes the worktree.
+    pub fn safe_merge(
+        &self,
+        branch_name: &str,
+        target_branch: Option<&str>,
+        commit_msg: Option<&str>,
+    ) -> Result<MergeResult, String> {
+        let base = target_branch.unwrap_or("main");
+        let full_branch = if branch_name.starts_with("rig/") {
+            branch_name.to_string()
+        } else {
+            format!("rig/{}", branch_name)
+        };
+
+        // 1. Checkout target branch in root
+        let checkout_out = Command::new("git")
+            .current_dir(&self.root_dir)
+            .args(["checkout", base])
+            .output()
+            .map_err(|e| format!("git checkout {} failed: {}", base, e))?;
+
+        if !checkout_out.status.success() {
+            let stderr = String::from_utf8_lossy(&checkout_out.stderr);
+            return Err(format!("Gagal checkout ke {}: {}", base, stderr));
+        }
+
+        // 2. Perform merge
+        let default_msg = format!(
+            "Merge branch '{}' into {} (Reviewed by Bg Codex, Implemented by Mbak Agy)",
+            full_branch, base
+        );
+        let msg = commit_msg.unwrap_or(&default_msg);
+
+        let merge_out = Command::new("git")
+            .current_dir(&self.root_dir)
+            .args(["merge", "--no-ff", "-m", msg, &full_branch])
+            .output()
+            .map_err(|e| format!("git merge failed: {}", e))?;
+
+        if !merge_out.status.success() {
+            let stderr = String::from_utf8_lossy(&merge_out.stderr);
+            return Err(format!("git merge konflik atau gagal: {}", stderr));
+        }
+
+        // 3. Get latest commit hash
+        let rev_out = Command::new("git")
+            .current_dir(&self.root_dir)
+            .args(["rev-parse", "--short", "HEAD"])
+            .output()
+            .map_err(|e| format!("rev-parse failed: {}", e))?;
+        let commit_hash = String::from_utf8_lossy(&rev_out.stdout).trim().to_string();
+
+        // 4. Remove worktree cleanly
+        let clean_branch_name = branch_name.strip_prefix("rig/").unwrap_or(branch_name);
+        let _ = self.remove_worktree(clean_branch_name);
+
+        Ok(MergeResult {
+            success: true,
+            commit_hash,
+            message: format!("Berhasil di-merge ke {} dengan commit [{}]!", base, msg),
+        })
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MergeResult {
+    pub success: bool,
+    pub commit_hash: String,
+    pub message: String,
 }
 
 fn parse_shortstat(stat: &str) -> (usize, usize, usize) {

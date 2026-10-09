@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Pause,
   Play,
-  Cpu,
   CornerDownLeft,
   MessageSquarePlus,
   Send,
@@ -27,11 +26,9 @@ export interface DagNodeDefinition {
   id: string;
   agentId: string;
   role: AgentRole;
-  title: string;
-  subtitle: string;
-  modelBadge: string;
-  modelFamily: "anthropic" | "google" | "openai";
-  artifactOutput: string;
+  stageLabel: string;
+  defaultTitle: string;
+  defaultSubtitle: string;
   dependencies: string[];
 }
 
@@ -40,45 +37,46 @@ const DAG_NODES_CONFIG: DagNodeDefinition[] = [
     id: "node-arch",
     agentId: "agent-arch",
     role: "architect",
-    title: "Design Spec & Task Decomposition",
-    subtitle: "Define architecture contracts & Blackboard SQLite schema",
-    modelBadge: "Opus 5.5",
-    modelFamily: "anthropic",
-    artifactOutput: "spec.json (v1.1)",
+    stageLabel: "Arsitektur",
+    defaultTitle: "Lead Architect",
+    defaultSubtitle: "Perancangan spesifikasi sistem & dekomposisi task",
     dependencies: [],
   },
   {
     id: "node-coder",
     agentId: "agent-coder",
     role: "coder",
-    title: "Scaffold Auth & JWT Handlers",
-    subtitle: "Implement JWT session validation & cookie middleware",
-    modelBadge: "Sonnet 4.6",
-    modelFamily: "anthropic",
-    artifactOutput: "rig/feat-auth (4 files)",
+    stageLabel: "Implementasi",
+    defaultTitle: "Feature Developer",
+    defaultSubtitle: "Pengkodean fitur di isolated worktree",
     dependencies: ["node-arch"],
   },
   {
     id: "node-tester",
     agentId: "agent-tester",
     role: "tester",
-    title: "Run Vitest & Endpoint Tests",
-    subtitle: "Execute regression suite for auth claims and expiration",
-    modelBadge: "Gemini 3.5",
-    modelFamily: "google",
-    artifactOutput: "vitest-report.xml",
+    stageLabel: "Pengujian",
+    defaultTitle: "QA & Test Engineer",
+    defaultSubtitle: "Eksekusi test suite & verifikasi pengujian",
     dependencies: ["node-coder"],
   },
   {
     id: "node-reviewer",
     agentId: "agent-reviewer",
     role: "reviewer",
-    title: "Audit Diff & Token Leak Check",
-    subtitle: "Verify security boundaries and evaluate git diff for merge",
-    modelBadge: "Opus 5.5",
-    modelFamily: "anthropic",
-    artifactOutput: "audit-verdict.md",
+    stageLabel: "Audit Keamanan",
+    defaultTitle: "Security Reviewer",
+    defaultSubtitle: "Audit git diff, verifikasi keamanan & merge guard",
     dependencies: ["node-tester"],
+  },
+  {
+    id: "node-hermes",
+    agentId: "agent-hermes",
+    role: "copilot",
+    stageLabel: "Co-Pilot Adaptif",
+    defaultTitle: "Hermes Adaptive Engine",
+    defaultSubtitle: "Menambal peran agen nonaktif & optimasi tugas sprint",
+    dependencies: ["node-arch"],
   },
 ];
 
@@ -88,6 +86,11 @@ const PRESET_PROMPTS = [
   "Audit git diff for accidentally committed secret keys",
   "Verify compatibility with Linux Wayland WebKitGTK",
 ];
+
+function nodeBranchName(pathOrBranch?: string): string | null {
+  if (!pathOrBranch || pathOrBranch === "-" || pathOrBranch === "") return null;
+  return pathOrBranch.split("/").pop() || null;
+}
 
 export const TaskDagCanvas: React.FC = () => {
   const {
@@ -123,7 +126,7 @@ export const TaskDagCanvas: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Compute status for each DAG Node based on agent & tasks
+  // Compute status for each DAG Node based on real agents & tasks
   const nodesWithState = useMemo(() => {
     return DAG_NODES_CONFIG.map((config) => {
       const agent = agents.find((a) => a.id === config.agentId);
@@ -133,21 +136,28 @@ export const TaskDagCanvas: React.FC = () => {
 
       if (agent?.status === "paused") {
         status = "paused";
-      } else if (task?.status === "done" || agent?.status === "completed") {
+      } else if (task?.status === "done") {
         status = "completed";
       } else if (task?.status === "in_review" || agent?.status === "waiting_approval") {
         status = "in_review";
       } else if (agent?.status === "running" || task?.status === "in_progress") {
         status = "in_progress";
-      } else if (agent?.status === "idle") {
-        status = "completed";
+      } else {
+        status = "pending";
       }
+
+      const displayTitle = task?.title || agent?.currentTaskTitle || config.defaultTitle;
+      const displaySubtitle = task?.description || config.defaultSubtitle;
+      const branchOrPath = nodeBranchName(task?.branchName || agent?.worktreePath);
 
       return {
         ...config,
         agent,
         task,
         status,
+        displayTitle,
+        displaySubtitle,
+        branchOrPath,
       };
     });
   }, [agents, tasks]);
@@ -259,6 +269,10 @@ export const TaskDagCanvas: React.FC = () => {
         return <FlaskConical size={15} className="text-amber-400" />;
       case "reviewer":
         return <ShieldCheck size={15} className="text-emerald-400" />;
+      case "copilot":
+        return <Workflow size={15} className="text-purple-400" />;
+      case "orchestrator":
+        return <Sparkles size={15} className="text-pink-400" />;
     }
   };
 
@@ -323,24 +337,45 @@ export const TaskDagCanvas: React.FC = () => {
     }
   };
 
-  const getModelBadge = (modelBadge: string, family: "anthropic" | "google" | "openai") => {
-    let colorStyle = "";
-    if (family === "anthropic") {
-      colorStyle = "bg-[#1c1a24] text-[#c4b5fd] border-[#342e48]";
-    } else if (family === "google") {
-      colorStyle = "bg-[#251e18] text-[#fcd34d] border-[#443628]";
-    } else {
-      colorStyle = "bg-[#16221c] text-[#6ee7b7] border-[#243d32]";
+  const getRoleBadge = (role: AgentRole) => {
+    switch (role) {
+      case "architect":
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border bg-[#1c1a24] text-[#c4b5fd] border-[#342e48]">
+            Architect
+          </span>
+        );
+      case "coder":
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border bg-[#14232f] text-[#7dd3fc] border-[#1e3a52]">
+            Developer
+          </span>
+        );
+      case "tester":
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border bg-[#251e18] text-[#fcd34d] border-[#443628]">
+            QA / Test
+          </span>
+        );
+      case "reviewer":
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border bg-[#16221c] text-[#6ee7b7] border-[#243d32]">
+            Security
+          </span>
+        );
+      case "copilot":
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border bg-[#271b38] text-[#d8b4fe] border-[#522b7a]">
+            Co-Pilot
+          </span>
+        );
+      case "orchestrator":
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border bg-[#2a1d30] text-[#f472b6] border-[#50245d]">
+            Orchestrator
+          </span>
+        );
     }
-
-    return (
-      <span
-        className={`flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded border ${colorStyle}`}
-      >
-        <Cpu size={10} />
-        {modelBadge}
-      </span>
-    );
   };
 
   return (
@@ -513,15 +548,15 @@ export const TaskDagCanvas: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* LLM Model Mini-Badge */}
-                    {getModelBadge(node.modelBadge, node.modelFamily)}
+                    {/* Role Badge (No hardcoded fake models) */}
+                    {getRoleBadge(node.role)}
                   </div>
 
                   <h4 className="text-xs font-semibold text-[#f3f3f3] line-clamp-1 group-hover:text-rig-accent">
-                    {node.title}
+                    {node.displayTitle}
                   </h4>
                   <p className="text-[11px] text-[#888888] mt-1 line-clamp-2 leading-relaxed">
-                    {node.subtitle}
+                    {node.displaySubtitle}
                   </p>
                 </div>
 
@@ -529,7 +564,7 @@ export const TaskDagCanvas: React.FC = () => {
                 <div className="mt-3.5 pt-2.5 border-t border-[#282828] flex items-center justify-between">
                   {getStatusBadge(node.status)}
 
-                  {node.task?.branchName ? (
+                  {node.branchOrPath ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -539,12 +574,12 @@ export const TaskDagCanvas: React.FC = () => {
                       title="Inspect Git Diff"
                     >
                       <GitBranch size={10} className="text-rig-accent" />
-                      <span>{node.task.branchName.split("/").pop()}</span>
+                      <span>{node.branchOrPath}</span>
                     </button>
                   ) : (
                     <span className="text-[10px] font-mono text-[#666666] flex items-center gap-1">
                       <FileCode2 size={10} />
-                      {node.artifactOutput}
+                      <span>{node.stageLabel}</span>
                     </span>
                   )}
                 </div>

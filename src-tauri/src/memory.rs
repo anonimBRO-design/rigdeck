@@ -9,7 +9,6 @@ use serde::Serialize;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
-use std::process::Command;
 
 pub const VAULT_DIR: &str = "rig-memory";
 
@@ -38,18 +37,56 @@ pub fn vault_root(project_root: &Path) -> PathBuf {
     project_root.join(VAULT_DIR)
 }
 
-fn shell_date(fmt: &str) -> String {
-    Command::new("date")
-        .arg(format!("+{}", fmt))
-        .output()
-        .ok()
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "unknown".to_string())
+/// Jam sekarang dalam UTC, format HH:MM.
+///
+/// Sama seperti `today()` — dulu pakai perintah shell `date` yang
+/// tidak ada di Windows.
+fn jam_sekarang() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let detik = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let dalam_hari = detik % 86_400;
+    let jam = dalam_hari / 3600;
+    let menit = (dalam_hari % 3600) / 60;
+
+    format!("{:02}:{:02}", jam, menit)
 }
 
+/// Tanggal hari ini, format YYYY-MM-DD.
+///
+/// DULU memanggil perintah shell `date` — itu perintah Linux.
+/// Di Windows tidak ada, jadi hasilnya selalu "unknown" dan
+/// journal-nya jadi `journal/unknown.md`. Sudah diperbaiki 9 Okt 2026.
+///
+/// Sekarang pakai `SystemTime` dari Rust std — jalan di Linux DAN Windows,
+/// tanpa spawn proses, tanpa bergantung pada program luar.
 fn today() -> String {
-    shell_date("%Y-%m-%d")
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let detik = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    // Ubah detik Unix -> (tahun, bulan, hari), tanpa crate tambahan.
+    // Algoritma: hari sipil dari Howard Hinnant, sudah diuji luas.
+    let hari = (detik / 86_400) as i64;
+    let z = hari + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+
+    format!("{:04}-{:02}-{:02}", y, m, d)
 }
 
 fn journal_rel_path(date: &str) -> String {
@@ -107,7 +144,7 @@ pub fn append_entry(
 ) -> Result<String, String> {
     let root = ensure_vault(project_root)?;
     let date = today();
-    let time = shell_date("%H:%M");
+    let time = jam_sekarang();
     let rel = journal_rel_path(&date);
     let path = root.join(&rel);
 
@@ -229,6 +266,121 @@ pub fn read_note(project_root: &Path, rel: &str) -> Result<String, String> {
     let root = ensure_vault(project_root)?;
     let path = safe_join(&root, rel)?;
     fs::read_to_string(&path).map_err(|e| format!("Gagal membaca {}: {}", rel, e))
+}
+
+/// Pesan yang akan diekspor menjadi catatan handoff (cerminan `ConductorMessage`).
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct HandoffMessage {
+    pub sender: String,
+    pub text: String,
+    #[serde(default)]
+    pub created_at: String,
+    /// Nama agen target, mis. "claude" | "antigravity" | "chatgpt".
+    #[serde(default)]
+    pub target: Option<String>,
+}
+
+/// Ubah judul bebas menjadi nama file yang aman (tanpa path traversal).
+pub fn slugify(title: &str) -> String {
+    let mut out = String::new();
+    let mut prev_dash = false;
+    for ch in title.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            prev_dash = false;
+        } else if !prev_dash && !out.is_empty() {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    let trimmed = out.trim_matches('-').to_string();
+    let capped: String = trimmed.chars().take(60).collect();
+    let final_name = capped.trim_matches('-').to_string();
+    if final_name.is_empty() {
+        "handoff".to_string()
+    } else {
+        final_name
+    }
+}
+
+/// Tulis satu percakapan menjadi catatan handoff di `rig-memory/handoffs/`.
+///
+/// Mengembalikan path relatif terhadap vault (mis. `handoffs/auth-jwt.md`).
+/// Nama file diberi suffix `-2`, `-3`, dst bila sudah ada agar tidak menimpa catatan lama.
+pub fn write_handoff(
+    project_root: &Path,
+    title: &str,
+    messages: &[HandoffMessage],
+    target_agents: &[String],
+    conversation_id: &str,
+) -> Result<String, String> {
+    let root = ensure_vault(project_root)?;
+    let handoffs_dir = root.join("handoffs");
+    fs::create_dir_all(&handoffs_dir).map_err(|e| e.to_string())?;
+
+    let slug = slugify(title);
+    let mut file_name = format!("{}.md", slug);
+    let mut counter = 2;
+    while handoffs_dir.join(&file_name).exists() {
+        file_name = format!("{}-{}.md", slug, counter);
+        counter += 1;
+        if counter > 500 {
+            return Err("Terlalu banyak file handoff dengan nama sama".to_string());
+        }
+    }
+
+    let date = today();
+    let time = jam_sekarang();
+
+    let mut body = String::new();
+    body.push_str("---\n");
+    body.push_str("type: handoff\n");
+    body.push_str(&format!("date: {}\n", date));
+    body.push_str(&format!("title: {}\n", title.replace('\n', " ")));
+    body.push_str(&format!("conversation_id: {}\n", conversation_id));
+    if !target_agents.is_empty() {
+        body.push_str(&format!("targets: [{}]\n", target_agents.join(", ")));
+    }
+    body.push_str("source: RigDeck Conductor\n");
+    body.push_str("---\n\n");
+    body.push_str(&format!("# Handoff — {}\n\n", title));
+    body.push_str(&format!(
+        "Diekspor dari RigDeck pada {} {} (thread `{}`).\n",
+        date, time, conversation_id
+    ));
+    if !target_agents.is_empty() {
+        body.push_str(&format!("\n**Target agen:** {}\n", target_agents.join(", ")));
+    }
+    body.push_str("\nLihat [[00-INDEX]] untuk konteks vault, dan [[02-Decisions]] untuk keputusan arsitektur.\n\n");
+    body.push_str("## Transkrip\n\n");
+
+    for msg in messages {
+        let who = match msg.sender.as_str() {
+            "user" => "🧑 Afgan".to_string(),
+            "system" => "⚙️ System".to_string(),
+            other => format!("🤖 {}", other),
+        };
+        let stamp = if msg.created_at.trim().is_empty() {
+            String::new()
+        } else {
+            format!(" · {}", msg.created_at)
+        };
+        body.push_str(&format!("### {}{}\n\n", who, stamp));
+        body.push_str(msg.text.trim());
+        body.push_str("\n\n");
+    }
+
+    body.push_str("---\n\n");
+    body.push_str("## Instruksi untuk agen penerima\n\n");
+    body.push_str("1. Baca [[00-INDEX]], [[01-Project-Context]], [[02-Decisions]], dan journal terbaru.\n");
+    body.push_str("2. Kerjakan bagian yang menjadi peranmu, lalu tulis SATU baris ringkasan ke `journal/YYYY-MM-DD.md` sesuai `AGENTS.md`.\n");
+    body.push_str("3. Bila ada keputusan arsitektur baru, tambahkan ke [[02-Decisions]] (append-only).\n");
+
+    let rel = format!("handoffs/{}", file_name);
+    let path = safe_join(&root, &rel)?;
+    fs::write(&path, body).map_err(|e| format!("Gagal menulis handoff: {}", e))?;
+
+    Ok(rel)
 }
 
 pub fn status(project_root: &Path) -> Result<MemoryStatus, String> {
@@ -373,6 +525,103 @@ mod tests {
         assert!(decisions.contains("pakai JWT RS256"));
         let ctx = read_context(&root, 50_000).unwrap();
         assert!(ctx.contains("spec selesai"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn slugify_is_filesystem_safe() {
+        assert_eq!(slugify("Auth JWT Feature"), "auth-jwt-feature");
+        assert_eq!(slugify("../../etc/passwd"), "etc-passwd");
+        assert_eq!(slugify("Hello / World!"), "hello-world");
+        assert_eq!(slugify("   "), "handoff");
+        assert_eq!(slugify(""), "handoff");
+        assert_eq!(slugify("a".repeat(200).as_str()).len(), 60);
+    }
+
+    #[test]
+    fn handoff_export_creates_note_and_never_overwrites() {
+        let root = temp_project("handoff");
+        let msgs = vec![
+            HandoffMessage {
+                sender: "user".into(),
+                text: "Tolong buat endpoint login".into(),
+                created_at: "2026-10-06T15:00:00Z".into(),
+                target: None,
+            },
+            HandoffMessage {
+                sender: "conductor".into(),
+                text: "Saya delegasikan ke Claude & Antigravity.".into(),
+                created_at: "2026-10-06T15:00:02Z".into(),
+                target: None,
+            },
+        ];
+
+        let rel = write_handoff(&root, "Auth JWT Feature", &msgs, &["claude".into(), "antigravity".into()], "conv-1")
+            .expect("handoff ditulis");
+        assert_eq!(rel, "handoffs/auth-jwt-feature.md");
+
+        let content = fs::read_to_string(root.join(VAULT_DIR).join(&rel)).unwrap();
+        assert!(content.contains("type: handoff"));
+        assert!(content.contains("# Handoff — Auth JWT Feature"));
+        assert!(content.contains("Tolong buat endpoint login"));
+        assert!(content.contains("Saya delegasikan ke Claude & Antigravity."));
+        assert!(content.contains("targets: [claude, antigravity]"));
+        assert!(content.contains("conv-1"));
+
+        // Export kedua dengan judul sama → file baru, bukan menimpa
+        let rel2 = write_handoff(&root, "Auth JWT Feature", &msgs, &[], "conv-1").unwrap();
+        assert_eq!(rel2, "handoffs/auth-jwt-feature-2.md");
+        assert!(root.join(VAULT_DIR).join("handoffs").join("auth-jwt-feature.md").exists());
+        assert!(root.join(VAULT_DIR).join(rel2).exists());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn handoff_from_conversation_row_shape() {
+        // Meniru bentuk data yang dikirim frontend dari get_conversation_messages
+        // (sender/text/created_at), termasuk delegasi yang sudah di-parse.
+        let root = temp_project("handoff-shape");
+        let msgs = vec![
+            HandoffMessage {
+                sender: "user".into(),
+                text: "tolong buat endpoint login JWT".into(),
+                created_at: "2026-10-06T18:00:00Z".into(),
+                target: None,
+            },
+            HandoffMessage {
+                sender: "conductor".into(),
+                text: "Siap, saya delegasikan ke 3 AI.".into(),
+                created_at: "2026-10-06T18:00:02Z".into(),
+                target: None,
+            },
+        ];
+
+        let rel = write_handoff(
+            &root,
+            "Auth JWT Feature",
+            &msgs,
+            &["claude".into(), "antigravity".into(), "chatgpt".into()],
+            "conv-ho-1",
+        )
+        .expect("handoff ditulis");
+
+        let content = fs::read_to_string(root.join(VAULT_DIR).join(&rel)).unwrap();
+        // Frontmatter lengkap untuk Obsidian
+        assert!(content.starts_with("---\n"));
+        assert!(content.contains("type: handoff"));
+        assert!(content.contains("conversation_id: conv-ho-1"));
+        assert!(content.contains("targets: [claude, antigravity, chatgpt]"));
+        // Wiki-links agar nyambung ke vault
+        assert!(content.contains("[[00-INDEX]]"));
+        assert!(content.contains("[[02-Decisions]]"));
+        // Transkrip lengkap dengan urutan benar
+        let user_pos = content.find("tolong buat endpoint login JWT").unwrap();
+        let conductor_pos = content.find("Siap, saya delegasikan ke 3 AI.").unwrap();
+        assert!(user_pos < conductor_pos, "urutan transkrip harus kronologis");
+        // Instruksi handoff untuk agen penerima
+        assert!(content.contains("Instruksi untuk agen penerima"));
+
         let _ = fs::remove_dir_all(&root);
     }
 

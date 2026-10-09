@@ -1,0 +1,45 @@
+# Line ending per jenis file.
+#
+# MASALAH YANG DICEGAH:
+# File .bat dengan line ending LF (Unix) membuat cmd.exe Windows
+# salah membaca seluruh file — jendela CMD muncul 0 detik lalu hilang,
+# tanpa pesan error. Sudah terjadi 9 Okt 2026, lihat rig-memory/Jebakan.md.
+#
+# Karena proyek ini dikerjakan di Linux (CachyOS) DAN Windows,
+# tanpa aturan ini line ending akan bolak-balik dan bug-nya muncul lagi.
+
+# Default: normalisasi ke LF di repo, checkout sesuai OS
+* text=auto eol=lf
+
+# File yang WAJIB CRLF di Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# File yang WAJIB LF, jangan diubah
+*.sh  text eol=lf
+*.nix text eol=lf
+
+# Binary — jangan disentuh
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.icns binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.exe  binary
+*.dll  binary
+*.so   binary
+*.dylib binary
+*.db   binary
+*.sqlite binary
+
+# Lock file — jangan di-diff, isinya panjang dan tidak berguna dibaca
+package-lock.json -diff
+bun.lock          -diff
+Cargo.lock        -diff
+
+# Bahasa: markdown dihitung statistik, tapi jangan di-diff besar
+*.md linguist-documentation
